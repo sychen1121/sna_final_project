@@ -1,116 +1,93 @@
-import networkx as nx
-from math import log    
+import math
+import numpy as np
 
-def common_neighbors(graph, x, y):
-    """compute common neighbors of node x and node y"""
-    x_neighbors = set(graph.neighbors(x))
-    y_neighbors = set(graph.neighbors(y))
+def social_feature(s_graph,n1,n2):
 
-    return float(len(x_neighbors & y_neighbors))
-
-
-def jaccard(graph, x, y):
-    """compute jacaard coefficient of node x, and node y"""
-    x_neighbors = set(graph.neighbors(x))
-    y_neighbors = set(graph.neighbors(y))
-
-    if len(x_neighbors) == 0 or len(y_neighbors) == 0:        
-        score = 0.0
+    n1_neightbor = s_graph.neighbors(n1)
+    n2_neightbor = s_graph.neighbors(n2)
+    common_n = set(n1_neightbor).intersection(n2_neightbor)
+    
+    neiNum1 = len(n1_neightbor)
+    neiNum2 = len(n2_neightbor)
+    
+    if neiNum1+neiNum2 <=0:
+        overlap_n = 0
     else:
-        score = len(x_neighbors & y_neighbors)/len(x_neighbors | y_neighbors)
-    return score
-
-def adamic(graph, x, y):
-    """compute adamic value of x and y"""
-    x_neighbors = set(graph.neighbors(x))
-    y_neighbors = set(graph.neighbors(y))
-
-    score = 0.0
-    for z in (x_neighbors & y_neighbors):
-        z_neighbors = graph.neighbors(z)
-        if len(z_neighbors) == 0:
+        overlap_n = common_n*1.0/(neiNum1+neiNum2-common_n)
+        
+    aa_n =0
+    for cn in common_n:
+        if len(s_graph.neighbors(cn))<=0:
             continue
-        elif len(z_neighbors) == 1:
-            score += 10.0
         else:
-            score += 1/log(len(z_neighbors))
-    return score
-
-def preferential(graph, x, y):
-    """compute preferential attachment of x, and y"""
-    x_neighbors = graph.neighbors(x)
-    y_neighbors = graph.neighbors(y)
-
-    score = len(x_neighbors) * len(y_neighbors)
-    return score
-
-def sim_rank(graph, x, y, gamma=0.5, similarity=jaccard):
-    """compute similarity rank of x and y"""
-    x_neighbors = graph.neighbors(x)
-    y_neighbors = graph.neighbors(y)
-
-    if len(x_neighbors) == 0 or len(y_neighbors) == 0:
-        score = 0.0
+            aa_n = aa_n + 1.0/math.log(len(s_graph.neighbors(cn)))
+    
+    pa = len(n1_neightbor)*len(n2_neightbor)
+    
+    return common_n,overlap_n,aa_n,pa
+    
+def place_feature(p_graph,n1,n2):
+    n1_place = p_graph.neighbors(n1)
+    n2_place = p_graph.neighbors(n2)
+    common_p= set(n1_place).intersection(n2_place)
+    union_p = set(n1_place).union(n2_place)
+    
+    pNum1 =len(n1_place)
+    pNum2 =len(n2_place)
+    
+    if pNum1+pNum2 <=0:
+        overlap_p = 0
     else:
-        sum = 0.0
-        for a in x_neighbors:
-            for b in y_neighbors:
-                sum += similarity(graph, a, b)
-        score = gamma * sum / len(x_neighbors) /len(y_neighbors)
-    return score
-
-def attr_score(graph, x, y, attribute, datatype):
-    a1 = graph.node[x][attribute]
-    a2 = graph.node[y][attribute]    
-    if a1=='' or a2=='':
-        return 0.0
-    score = float()
-    try:
-        if datatype == 'numerical':
-            num1 = int(a1)
-            num2 = int(a2)
-            if num1>num2:
-                score = float(num2)/num1
-            else:
-                score = float(num1)/num2
+        overlap_p= common_p*1.0/((pNum1+pNum2)-common_p)
+    
+    aa_ent = 0
+    min_ent = -1
+    aa_p =0
+    min_p = -1
+    
+    for place in common_p:
+#         compute min_ent
+        if (min_p == -1) or (p_graph.node[place]['entropy'] < min_ent):
+            min_ent = p_graph.node[place]['entropy']
+#         compute min_p
+        if (min_p == -1) or (p_graph.node[place]['total_checkin'] < min_ent):
+            min_p = p_graph.node[place]['total_checkin']
+#         count aa_ent
+        if p_graph.node[place]['entropy']<=0:
+            continue
         else:
-            a1_set = set(a1.split(' '))
-            a2_set = set(a2.split(' '))
-            score = float(len(a1_set.intersection(a2_set)))/len(a1_set.union(a2_set))
-#            print(attribute, 'a1',a1_set, 'a2', a2_set)
-            # print('a1 is '+a1+', a2 is '+a2)
-            # print(score)
-#        print(attribute, score, sep=':')
-        return score
-    except:
-        return 0.0
-
-def common_attribute_similarity(graph, x, y):
-    region   = attr_score(graph, x, y, 'column_4', 'categorical') 
-    language = attr_score(graph, x, y, 'column_5', 'categorical')
-    hobby    = attr_score(graph, x, y, 'column_7', 'categorical') 
-    education = attr_score(graph, x, y, 'column_8', 'categorical')
-    music1   = attr_score(graph, x, y, 'column_21', 'categorical')
-    music2   = attr_score(graph, x, y, 'column_34', 'categorical')
-    movie1   = attr_score(graph, x, y, 'column_37', 'categorical')
-    movie2   = attr_score(graph, x, y, 'column_50', 'categorical')
-    com_neig = common_neighbors(graph, x, y)
-#    print(com_neig, end=' ')
-#    print(region   ,end=' ') 
-#    print(language ,end=' ')
-#    print(education,end=' ')
-#    print(hobby    ,end=' ')
-#    print(music1   ,end=' ')
-#    print(music2   ,end=' ')
-#    print(movie1   ,end=' ')
-#    print(movie2           )
-    if com_neig <= 5:
-        com_neig = com_neig*4/25
-    elif com_neig <= 100:
-        com_neig = 0.8+(com_neig-5.0)*0.2/95.0
+            aa_ent = aa_ent + 1.0/p_graph.node[place]['entropy']
+#         count aa_p
+        if p_graph.node[place]['total_checkin']<=0:
+            continue
+        else:
+            aa_p = aa_p + 1.0/p_graph.node[place]['total_checkin']
+    
+# compute  w_common_p/w_overlap_p
+    
+    c1 = list()
+    c2 = list()
+    for place in union_p:
+        if place in n1_place:
+            c1.append(p_graph[n1][place]['num_checkin'])
+        else:
+            c1.append(0)
+            
+        if place in n2_place:
+            c2.append(p_graph[n2][place]['num_checkin'])
+        else:
+            c2.append(0)
+    
+    c1 = np.array(c1)
+    c2 = np.array(c2)
+        
+    w_common_p = np.dot(c1,c2)
+    
+    seDot = (np.dot(c1,c1)*np.dot(c2,c2))**(1/2.0)
+    if seDot <= 0:
+        w_overlap_p = 0
     else:
-        com_neig = 1+(com_neig-100.0)/99900.0
-    weight = 0.6
-    score = weight*(region+language+education+com_neig)+\
-            (1-weight)*(hobby+music1+music2+movie1+movie2)            
-    return score
+        w_overlap_p = np.dot(c1,c2)/seDot
+    
+    return common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p
+        
