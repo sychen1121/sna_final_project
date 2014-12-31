@@ -1,6 +1,35 @@
+def create_social_graph(file_path):
+    """create social network as a graph from gowalla.train.txt"""
+    import networkx as nx
+    from time import time
+    social_graph = nx.Graph()
+    file = open(file_path+'gowalla.train.txt', 'r')
+    user_info = open(file_path+'users_info_new.dat', 'r')
+    edge_list = list()
+    not_friend_list = list()    
+    s = time()
+    for line in file:
+        entry = line.strip().split()
+        if entry[2] == '1':
+            edge_list.append((int(entry[0]), int(entry[1])))
+        else:
+            not_friend_list.append((int(entry[0]), int(entry[1])))
+    social_graph.add_edges_from(edge_list)
+    for line in user_info:
+        substring = line.strip().split('hometown', maxsplit=1)
+        user = int(substring[0].strip())
+        part = (substring[1].split('follower_count'))
+        h = part[0].strip()
+        fc = part[1].strip()
+        social_graph.add_node(user, hometown=h, follower_count=fc)
+    e = time()
+    print('time for social_graph', e-s)
+    return social_graph, not_friend_list
+
 def create_checkin_info(file_path):
     """create_checkin_information from file_path"""
     import networkx as nx
+    import datetime as dt
     from time import time
     checkin_info = nx.Graph()    
     checkin_file = open(file_path+'checkins_info.dat', 'r')
@@ -8,21 +37,24 @@ def create_checkin_info(file_path):
     for line in checkin_file:
         entry = line.strip().split()
         user = int(entry[0])
-        place_list = list() #visited place list
         for checkin in entry[1:]:
-            place_list.append(int(checkin.split(':')[3]))
-        for place in place_list: #the checkin number of visited places
+            place = (int(checkin.split(':')[3]))
+            date_string = checkin.split('Z')[0]
+            checkin_time = dt.datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
             placeID='p'+str(place)
             if checkin_info.has_edge(user, placeID):
                 num = checkin_info.edge[user][placeID]['num_checkin']
+                clist = checkin_info.edge[user][placeID]['checkin_time_list']
             else:
                 num = 0
+                clist = list()
             if checkin_info.has_node(placeID):
                 total = checkin_info.node[placeID]['total_checkin']
             else:
                 total = 0
+            clist.append(checkin_time)
             checkin_info.add_node(user, type='user')
-            checkin_info.add_edge(user, placeID, num_checkin=num+1)
+            checkin_info.add_edge(user, placeID, num_checkin=num+1, checkin_time_list=clist)
             checkin_info.add_node(placeID, type='place', category=0, total_checkin=total+1, \
                     lat=0.0, lng=0.0, total_checkin_spot=0)
     e = time()

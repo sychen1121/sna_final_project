@@ -13,18 +13,20 @@ def social_feature(s_graph,n1,n2):
     if neiNum1+neiNum2 <=0:
         overlap_n = 0
     else:
-        overlap_n = common_n*1.0/(neiNum1+neiNum2-common_n)
+        overlap_n = len(common_n)*1.0/(neiNum1+neiNum2-len(common_n))
         
     aa_n =0
     for cn in common_n:
         if len(s_graph.neighbors(cn))<=0:
             continue
+        elif len(s_graph.neighbors(cn)) == 1:
+            aa_n += 100.0
         else:
             aa_n = aa_n + 1.0/math.log(len(s_graph.neighbors(cn)))
     
     pa = len(n1_neightbor)*len(n2_neightbor)
     
-    return common_n,overlap_n,aa_n,pa
+    return len(common_n),overlap_n,aa_n,pa
     
 def place_feature(p_graph,n1,n2):
     n1_place = p_graph.neighbors(n1)
@@ -38,7 +40,7 @@ def place_feature(p_graph,n1,n2):
     if pNum1+pNum2 <=0:
         overlap_p = 0
     else:
-        overlap_p= common_p*1.0/((pNum1+pNum2)-common_p)
+        overlap_p= len(common_p)*1.0/((pNum1+pNum2)-len(common_p))
     
     aa_ent = 0
     min_ent = -1
@@ -89,5 +91,5 @@ def place_feature(p_graph,n1,n2):
     else:
         w_overlap_p = np.dot(c1,c2)/seDot
     
-    return common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p
+    return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p
         
