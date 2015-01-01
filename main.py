@@ -4,86 +4,74 @@ import multiprocessing as mp
 import math
 from time import time
 from sys import argv
+def writeFeature(f, label, feature_list):
+    """create label and feature to a file"""
+    for feature in feature_list:
+        print(label, end=',', file=f)
+        for i in range(len(feature)):
+            if i == len(feature)-1:
+                print(feature[i], file=f)
+            else:
+                print(feature[i], end=',', file=f)
+def computeFeature(social_graph, checkin_graph, edges_list, nprocs):
+    """using multiprocessing to speed up feature computation"""
+    s = time()
+    num_edge = len(edges_list)
+    out_q = mp.Queue()
+    chunk_size = int(math.ceil(num_edge/nprocs))
+    procs = []
+    for i  in range(nprocs):
+        if i == nprocs - 1:
+            edges = edges_list[i*chunk_size:]
+        else:
+            edges = edges_list[i*chunk_size:(i+1)*chunk_size]
+        p = mp.Process(target=worker, args=(social_graph, checkin_graph, edges, out_q))
+        procs.append(p)
+        p.start()
+    feature_list = list()
+    for i in range(nprocs):
+        feature_list += (out_q.get())
+    for p in procs:
+        p.join()
+    e = time()
+    print("time of feature:", e-s)
+    return feature_list
 
-def worker(file_name, social_graph, checkin_graph, edges, index, label):
+def worker(social_graph, checkin_graph, edges, out_q):
     out_list = list()
-    train_feature = open(file_name+'.'+str(label)+'.'+str(index)+'.csv', 'w')
-    print('label,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p',file=train_feature)
     for edge in edges:
         n1 = edge[0]
         n2 = edge[1]
         common_n, overlap_n, aa_n, pa = ft.social_feature(social_graph, n1, n2)
         common_p, overlap_p, w_common_p, w_overlap_p, aa_ent, min_ent, aa_p, min_p = ft.place_feature(checkin_graph, n1, n2)
         out_list.append((common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p))
-    for feature in out_list:
-        print(label, end=',', file=train_feature)
-        for i in range(len(feature)):
-            if i == len(feature)-1:
-                print(feature[i], file=train_feature)
-            else:
-                print(feature[i], end=',', file=train_feature)
-#    out_q.put(out_list)
+    out_q.put(out_list)
 
 if __name__ == '__main__':
-    file_path = argv[1]
+    input_path = argv[1]
     output_path = argv[2]
     nprocs = int(argv[3])
-    checkin_graph = cf.create_checkin_info(file_path)
-    social_graph, not_friend_list = cf.create_social_graph(file_path)
-#    train_feature = open(output_path+'train_feature.csv', 'w')
-#    print('label,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p',file=train_feature)
+    command = argv[4]
+# initialize 
+    checkin_graph = cf.create_checkin_info(input_path)
+    social_graph, not_friend_list = cf.create_social_graph(input_path)
+# command execution
+    if command == 'train': # compute train features
+        train_feature_file = open(output_path+'train_feature.csv', 'w')
+        print('label,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p',file=train_feature_file)
+        label_1_feature = computeFeature(social_graph, checkin_graph, social_graph.edges(), nprocs)
+        label_0_feature = computeFeature(social_graph, checkin_graph, not_friend_list, nprocs)
+        writeFeature(train_feature_file, 1, label_1_feature)
+        writeFeature(train_feature_file, 0, label_0_feature)
+    elif command == 'test': # compute test features
+        test = open(input_path+'gowalla.test.txt', 'r')
+        edges_list = list()
+        for line in test:
+            entry = line.strip().split()
+            edges_list.append((int(entry[0]), int(entry[1])))
+        test_feature_file = open(output_path+'test_feature.csv', 'w')
+        print('label,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p',file=test_feature_file)
+        test_feature = computeFeature(social_graph, checkin_graph, edges_list, nprocs)
+        writeFeature(test_feature_file, 0, test_feature)
+    print("end of execution")
 
-# using multiprocessing to speed up the execution
-    num_edge = social_graph.number_of_edges()
-#    out_q = mp.Queue()
-    chunk_size = int(math.ceil(num_edge/nprocs))
-    procs = []
-    for i  in range(nprocs):
-        if i == nprocs - 1:
-            edges = social_graph.edges()[i*chunk_size:]
-        else:
-            edges = social_graph.edges()[i*chunk_size:(i+1)*chunk_size]
-        p = mp.Process(target=worker, args=(output_path+'train_feature', social_graph, checkin_graph, edges, i, 1))
-        procs.append(p)
-        p.start()
-
-#    label_1_feature = list()
-#    for i in range(nprocs):
-#        label_1_feature += (out_q.get())
-    for p in procs:
-        p.join()
-# compute label 0's feature
-    num_edge = len(not_friend_list)
-#    out_q2 = mp.Queue()
-    chunk_size = int(math.ceil(num_edge/nprocs))
-    procs = []
-    for i  in range(nprocs):
-        if i == nprocs - 1:
-            edges = not_friend_list[i*chunk_size:]
-        else:
-            edges = not_friend_list[i*chunk_size:(i+1)*chunk_size]
-        p = mp.Process(target=worker, args=(file_path+'train_feature', social_graph, checkin_graph, edges, i, 0))
-        procs.append(p)
-        p.start()
-
-#    label_0_feature = list()
-#    for i in range(nprocs):
-#        label_0_feature += (out_q2.get())
-    for p in procs:
-        p.join()
-# print feature to train_feature.csv
-#    for feature in label_1_feature:
-#        print('1', end=',', file=train_feature)
-#        for i in range(8):
-#            if i == 7:
-#                print(feature[i], file=train_feature)
-#            else:
-#                print(feature[i], end=',', file=train_feature)
-#    for feature in label_0_feature:
-#        print('0', end=',', file=train_feature)
-#        for i in range(8):
-#            if i == 7:
-#                print(feature[i], file=train_feature)
-#            else:
-#                print(feature[i], end=',', file=train_feature)
-#    test = open(file_path+'gowalla.test.txt', 'r')
