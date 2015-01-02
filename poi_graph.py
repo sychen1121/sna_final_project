@@ -47,9 +47,10 @@ def create_poi_graph(file_path):
 			poi_graph.add_node(placeID, type='place', lat=latitude, lng=longtitude, total_checkin = total_checkin)
 			poi_graph.add_edge(user, placeID, num_checkin=num_checkin+1, checkin_time_list=clist)
 	print(poi_graph.nodes())
+	sorted(user_list)
+	sorted(place_list)
 	update_user_info(file_path, poi_graph)
 	update_place_info(file_path, poi_graph)
-
 
 	return poi_graph, user_list, place_list
 
