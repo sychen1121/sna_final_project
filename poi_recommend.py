@@ -50,6 +50,8 @@ def write_prediction(method, predict_dict):
 
 def cf_user(graph, user_list, place_list, output_path):
 	# for user in user_list:
+	for user in user_list:
+		graph.node[user]
 	predict_dict = dict()
 	return predict_dict
 
