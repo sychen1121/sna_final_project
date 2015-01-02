@@ -5,7 +5,10 @@ from time import time
 # create user and place points
 def create_poi_graph(file_path):
 	poi_graph = nx.Graph()
+	user_list = list()
+	place_list = list()
 	# add users
+	# just user of having checkin data?
 	with open(file_path+'Gowalla_edges.txt','r') as fu:
 		for line in fu:
 			users = line.strip().split()
@@ -36,6 +39,10 @@ def create_poi_graph(file_path):
 				num_checkin = 0
 				clist = list()
 			clist.append(checkin_time)
+			if user not in user_list:
+				user_list.append(user)
+			if placeID not in place_list:
+				place_list.append(placeID)
 			poi_graph.add_node(user, type='user')
 			poi_graph.add_node(placeID, type='place', lat=latitude, lng=longtitude, total_checkin = total_checkin)
 			poi_graph.add_edge(user, placeID, num_checkin=num_checkin+1, checkin_time_list=clist)
@@ -43,7 +50,8 @@ def create_poi_graph(file_path):
 	update_user_info(file_path, poi_graph)
 	update_place_info(file_path, poi_graph)
 
-	return poi_graph
+
+	return poi_graph, user_list, place_list
 
 # add total checkin
 def update_place_info(file_path, graph):
@@ -53,16 +61,16 @@ def update_place_info(file_path, graph):
         entry = line.strip().split()
         placeID = 'p'+entry[0]
         cat = int(entry[2])
-        # if exist? total_checkin?
         total =  int(entry[4])
         latitude = float(entry[6])
         longtitude = float(entry[8])
         if graph.has_node(placeID):
             graph.add_node(placeID, type='place', category=cat, total_checkin_spot=total, \
                     lat=latitude, lng=longtitude)
-        else:
-            graph.add_node(placeID, type='place', category=cat, total_checkin_spot=total, \
-                    lat=latitude, lng=longtitude, total_checkin=total)
+        # need not to add place if no one have checked in there
+        # else:
+            # graph.add_node(placeID, type='place', category=cat, total_checkin_spot=total, \
+                    # lat=latitude, lng=longtitude, total_checkin=total)
 
 # add hometown and followers information
 def update_user_info(file_path, graph):
