@@ -83,8 +83,4 @@ def update_user_info(file_path, graph):
 			follower_count = int(entry[4])
 			graph.add_node(user, type='user', followers=follower_count, hometown=hometown)
 
-# def cf_user():
-
-# def cf_item():
-
 poi_graph = create_poi_graph('../input/Gowalla_new/POI/')
