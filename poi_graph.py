@@ -41,16 +41,12 @@ def create_poi_graph(file_path):
 				num_checkin = 0
 				clist = list()
 			clist.append(checkin_time)
-			# if user not in user_list:
-			# 	user_list.append(user)
-			# if placeID not in place_list:
-			# 	place_list.append(placeID)
 			user_set.add(user)
 			place_set.add(placeID)
 			poi_graph.add_node(user, type='user')
 			poi_graph.add_node(placeID, type='place', lat=latitude, lng=longtitude, total_checkin = total_checkin)
 			poi_graph.add_edge(user, placeID, num_checkin=num_checkin+1, checkin_time_list=clist)
-	print(poi_graph.nodes())
+	# print(poi_graph.nodes())
 	user_list = sorted(list(user_set))
 	place_list = sorted(list(place_set))
 	update_user_info(file_path, poi_graph)
@@ -88,4 +84,4 @@ def update_user_info(file_path, graph):
 			follower_count = int(entry[4])
 			graph.add_node(user, type='user', followers=follower_count, hometown=hometown)
 
-poi_graph = create_poi_graph('../input/Gowalla_new/POI/')
+poi_graph, user_list, place_list = create_poi_graph('../input/Gowalla_new/POI/')

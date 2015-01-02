@@ -50,8 +50,8 @@ def write_prediction(method, predict_dict):
 
 def cf_user(graph, user_list, place_list, output_path):
 	# for user in user_list:
-	for user in user_list:
-		graph.node[user]
+	# for user in user_list:
+		# graph.node[user]
 	predict_dict = dict()
 	return predict_dict
 
@@ -59,6 +59,6 @@ def cf_item(graph, user_list, place_list, output_path):
 	predict_dict = dict()
 	return predict_dict
 
-poi_graph, user_list, place_list = create_poi_graph('../input/Gowalla_new/POI/')
+poi_graph, user_list, place_list = poi_graph.create_poi_graph('../input/Gowalla_new/POI/')
 cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
-cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
+cf_item(poi_graph, user_list, place_list, '../output/poi_recommendation/')
