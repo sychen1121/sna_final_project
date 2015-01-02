@@ -32,7 +32,7 @@ def evaluate(testing_path, prediction_path, method):
 				bingo = bingo+1
 				answer_places.remove(place)
 	accuracy = float(bingo)/(3*len(answers))
-	with open('../output/poi_recommendation.txt', 'a') as fo:
+	with open('../output/poi_recommendation/result.txt', 'a') as fo:
 		fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now()))
 
 
