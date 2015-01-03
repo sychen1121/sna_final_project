@@ -2,7 +2,21 @@ import networkx as nx
 import datetime as dt
 from time import time
 
-# create user and place points
+# create link between users
+def create_social_graph(file_path):
+	social_graph = nx.Graph()
+	with open(file_path+'Gowalla_edges.txt','r') as fu:
+		for line in fu:
+			users = line.strip().split()
+			usera = int(users[0])
+			userb = int(users[1])
+			social_graph.add_node(usera, type='user', followers=0, hometown='None')
+			social_graph.add_edge(usera, userb)
+	update_user_info(file_path, social_graph)
+	return social_graph
+
+
+# create users, places, and links between users and places
 def create_poi_graph(file_path):
 	poi_graph = nx.Graph()
 	user_list = list()
@@ -10,20 +24,10 @@ def create_poi_graph(file_path):
 	user_set = set()
 	place_set = set()
 	# add users
-	# just user of having checkin data?
-	with open(file_path+'Gowalla_edges.txt','r') as fu:
-		for line in fu:
-			users = line.strip().split()
-			usera = int(users[0])
-			userb = int(users[1])
-			for user in users:
-				poi_graph.add_node(int(user), followers=0)
-			poi_graph.add_edge(usera, userb)
-	# add spot and user, place link
 	with open(file_path+'Gowalla_training.txt', 'r') as fi:
 		for line in fi:
 			entry = line.strip().split()
-			user = entry[0]
+			user = int(entry[0])
 			latitude = entry[2]
 			longtitude = entry[3]
 			place = entry[-1]
@@ -41,19 +45,13 @@ def create_poi_graph(file_path):
 				num_checkin = 0
 				clist = list()
 			clist.append(checkin_time)
-			# if user not in user_list:
-			# 	user_list.append(user)
-			# if placeID not in place_list:
-			# 	place_list.append(placeID)
 			user_set.add(user)
 			place_set.add(placeID)
 			poi_graph.add_node(user, type='user')
-			poi_graph.add_node(placeID, type='place', lat=latitude, lng=longtitude, total_checkin = total_checkin)
+			poi_graph.add_node(placeID, type='place', lat=latitude, lng=longtitude, total_checkin = total_checkin+1)
 			poi_graph.add_edge(user, placeID, num_checkin=num_checkin+1, checkin_time_list=clist)
-	print(poi_graph.nodes())
 	user_list = sorted(list(user_set))
 	place_list = sorted(list(place_set))
-	update_user_info(file_path, poi_graph)
 	update_place_info(file_path, poi_graph)
 
 	return poi_graph, user_list, place_list
@@ -88,4 +86,33 @@ def update_user_info(file_path, graph):
 			follower_count = int(entry[4])
 			graph.add_node(user, type='user', followers=follower_count, hometown=hometown)
 
-poi_graph = create_poi_graph('../input/Gowalla_new/POI/')
+# make the most visited place as home
+def update_user_hometown(social_graph, poi_graph):
+	for node in poi_graph.nodes():
+		if poi_graph.node[node]['type'] == 'user':
+			if not social_graph.has_node(node):
+				social_graph.add_node(node, type='user', followers=0, hometown='None')
+			if social_graph.node[node]['hometown']=='None':
+				neighbors = poi_graph.neighbors(node)
+				checkin_nums= list()
+				for n in neighbors:
+					num_checkin = poi_graph.edge[node][n]['num_checkin']
+					checkin_nums.append(num_checkin)
+				try:
+					home_checkin = max(checkin_nums)
+					home = neighbors[checkin_nums.index(home_checkin)]
+					hometown = (poi_graph.node[home]['lat'], poi_graph.node[home]['lng'])
+					social_graph.node[node]['hometown'] = hometown
+					# print(social_graph.node[node]['hometown'])
+				except:
+					print('really no hometown')
+	# for node in social_graph.nodes(data=True):
+		# if node[1]['hometown'] != 'None':
+			# print(node)
+
+
+
+
+poi_graph, user_list, place_list = create_poi_graph('../input/Gowalla_new/POI/')
+social_graph = create_social_graph('../input/Gowalla_new/POI/')
+update_user_hometown(social_graph, poi_graph)
