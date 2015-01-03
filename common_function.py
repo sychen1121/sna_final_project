@@ -122,7 +122,7 @@ def get_distance(origins, destinations):
     import googlemaps as gmaps
     import json
     client = gmaps.Client(key='AIzaSyABja4kcCMTjVLYMepiO5q2MtoWuxfK7NI')
-    tmp = client.distance_matrix(origins, destinations)
+    tmp = client.distance_matrix(origins, destinations, language='en_US')
     result = dict()
     try:
         if tmp['status'] == 'OK':
@@ -141,4 +141,4 @@ def get_distance(origins, destinations):
             raise Exception
     except Exception:
         print("query error")
-    return origin_addresses, destination_addresses, result
+    return result

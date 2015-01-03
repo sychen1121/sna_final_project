@@ -75,8 +75,8 @@ if __name__ == '__main__':
         writeFeature(test_feature_file, 0, test_feature)
     elif command == 'verify':
         # just to verify the correctness of a function  
-        origins = 'Vancouver+BC|Seattle'
-        destinations = 'San+Francisco|Victoria+BC'
+        origins = '花蓮縣花蓮市中美路104號'
+        destinations = '花蓮火車站'
         result = cf.get_distance(origins, destinations)
         print(result)
     print("end of execution")
