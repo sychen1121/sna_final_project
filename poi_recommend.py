@@ -114,7 +114,6 @@ def cal_cosine(dict1, dict2):
 
 
 def norm_vector_by_graph(origin_list, graph):
-<<<<<<< HEAD
 	items_norm_dict = dict()
 	# get all norm vectors
 	for item in origin_list:
