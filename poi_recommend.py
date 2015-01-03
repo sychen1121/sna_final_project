@@ -89,8 +89,6 @@ def write_sim_json(output_dict, file_path, file_name):
 
 
 def cf_user(graph, user_list, place_list, output_path):
-	# for user in user_list:
-		# graph.node[user]
 	predict_dict = dict()
 	return predict_dict
 
