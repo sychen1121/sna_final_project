@@ -55,8 +55,9 @@ def cal_sim_matrix(user_list, place_list, poi_graph, social_graph):
     write_sim_json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
     write_sim_json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
 
-    # user_vectors = dict()
-    # for user in user_list:
+
+# def cal_cosine():
+	
 def norm_vector_by_graph(origin_list, graph):
     items_norm_dict = dict()
     # get all norm vectors
@@ -73,6 +74,12 @@ def norm_vector_by_graph(origin_list, graph):
             norm_dict[i] = norm_dict[i]/normValue
         items_norm_dict[item] = norm_dict
     return items_norm_dict
+
+
+def read_sim_json(file_path, file_name):
+	with open(file_path+file_name, 'r') as fi:
+		result_dict = json.loads(fi.read())
+	return result_dict
 
 def write_sim_json(output_dict, file_path, file_name):
     # if need indent?
@@ -91,7 +98,7 @@ def cf_item(graph, user_list, place_list, output_path):
 
 poi_graph, user_list, place_list = poi.create_poi_graph('../input/Gowalla_new/POI/')
 social_graph = poi.create_social_graph('../input/Gowalla_new/POI/')
-update_user_hometown(social_graph, poi_graph)
+poi.update_user_hometown(social_graph, poi_graph)
 cal_sim_matrix(user_list, place_list, poi_graph, social_graph)
 # cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
 # cf_item(poi_graph, user_list, place_list, '../output/poi_recommendation/')
