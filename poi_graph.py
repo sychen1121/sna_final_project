@@ -7,6 +7,8 @@ def create_poi_graph(file_path):
 	poi_graph = nx.Graph()
 	user_list = list()
 	place_list = list()
+	user_set = set()
+	place_set = set()
 	# add users
 	# just user of having checkin data?
 	with open(file_path+'Gowalla_edges.txt','r') as fu:
@@ -39,16 +41,18 @@ def create_poi_graph(file_path):
 				num_checkin = 0
 				clist = list()
 			clist.append(checkin_time)
-			if user not in user_list:
-				user_list.append(user)
-			if placeID not in place_list:
-				place_list.append(placeID)
+			# if user not in user_list:
+			# 	user_list.append(user)
+			# if placeID not in place_list:
+			# 	place_list.append(placeID)
+			user_set.add(user)
+			place_set.add(placeID)
 			poi_graph.add_node(user, type='user')
 			poi_graph.add_node(placeID, type='place', lat=latitude, lng=longtitude, total_checkin = total_checkin)
 			poi_graph.add_edge(user, placeID, num_checkin=num_checkin+1, checkin_time_list=clist)
 	print(poi_graph.nodes())
-	sorted(user_list)
-	sorted(place_list)
+	user_list = sorted(list(user_set))
+	place_list = sorted(list(place_set))
 	update_user_info(file_path, poi_graph)
 	update_place_info(file_path, poi_graph)
 
