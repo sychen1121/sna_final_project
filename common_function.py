@@ -113,3 +113,32 @@ def compute_entropy(checkin_info, place):
         entropy += fraction * log(fraction)
     entropy *= -1
     return entropy    
+def get_distance(origins, destinations):
+    """
+        obtain distances from origins to destinations
+        by using google map api
+        format of origins/destinations: Bobcaygeon+ON|41.43206,-81.38992|(41.43206,-81.38992)
+    """
+    import googlemaps as gmaps
+    import json
+    client = gmaps.Client(key='AIzaSyABja4kcCMTjVLYMepiO5q2MtoWuxfK7NI')
+    tmp = client.distance_matrix(origins, destinations)
+    result = dict()
+    try:
+        if tmp['status'] == 'OK':
+            origin_addresses = tmp['origin_addresses']
+            destination_addresses = tmp['destination_addresses']
+            for i, row in enumerate(tmp['rows']):
+                origin = origin_addresses[i]
+                result[origin] = dict()
+                for j, element in enumerate(row['elements']):
+                    destination = destination_addresses[j]
+                    if element['status'] == 'OK':
+                        result[origin][destination] = int(element['distance']['value'])
+                    else:
+                        raise Exception
+        else:
+            raise Exception
+    except Exception:
+        print("query error")
+    return origin_addresses, destination_addresses, result

@@ -96,9 +96,21 @@ def cf_item(graph, user_list, place_list, output_path):
     predict_dict = dict()
     return predict_dict
 
+def choice(weighted_choices):
+# weighted_choices is a tuple list such as [(choice1, weight1), (choice2, weight2)]
+    from itertools import accumulate
+    from bisect import bisect
+    from random import random
+    choices, weights = zip(*weighted_choices)
+    cumdist = list(accumulate(weights))
+    x = random() * cumdist[-1]
+    #print('choice',choices[bisect(cumdist, x)])
+    return choices[bisect(cumdist, x)]    
+
+
 poi_graph, user_list, place_list = poi.create_poi_graph('../input/Gowalla_new/POI/')
 social_graph = poi.create_social_graph('../input/Gowalla_new/POI/')
 poi.update_user_hometown(social_graph, poi_graph)
 cal_sim_matrix(user_list, place_list, poi_graph, social_graph)
-# cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
+ cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
 # cf_item(poi_graph, user_list, place_list, '../output/poi_recommendation/')

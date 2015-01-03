@@ -53,8 +53,8 @@ if __name__ == '__main__':
     nprocs = int(argv[3])
     command = argv[4]
 # initialize 
-    checkin_graph = cf.create_checkin_info(input_path)
-    social_graph, not_friend_list = cf.create_social_graph(input_path)
+    #checkin_graph = cf.create_checkin_info(input_path)
+    #social_graph, not_friend_list = cf.create_social_graph(input_path)
 # command execution
     if command == 'train': # compute train features
         train_feature_file = open(output_path+'train_feature.csv', 'w')
@@ -73,5 +73,10 @@ if __name__ == '__main__':
         print('label,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p',file=test_feature_file)
         test_feature = computeFeature(social_graph, checkin_graph, edges_list, nprocs)
         writeFeature(test_feature_file, 0, test_feature)
+    elif command == 'verify':
+        # just to verify the correctness of a function  
+        origins = 'Vancouver+BC|Seattle'
+        destinations = 'San+Francisco|Victoria+BC'
+        result = cf.get_distance(origins, destinations)
+        print(result)
     print("end of execution")
-
