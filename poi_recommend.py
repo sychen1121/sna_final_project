@@ -74,6 +74,12 @@ def norm_vector_by_graph(origin_list, graph):
 		items_norm_dict[item] = norm_dict
 	return items_norm_dict
 
+# def write_sim_matrix
+def read_sim_json(file_path, file_name):
+	with open(file_path+file_name, 'r') as fi:
+		result_dict = json.loads(fi.read())
+	return result_dict
+
 def write_sim_json(output_dict, file_path, file_name):
 	# if need indent?
 	jsonString = json.dumps(output_dict, sort_keys=True)
@@ -94,7 +100,7 @@ def cf_item(graph, user_list, place_list, output_path):
 
 poi_graph, user_list, place_list = poi.create_poi_graph('../input/Gowalla_new/POI/')
 social_graph = poi.create_social_graph('../input/Gowalla_new/POI/')
-update_user_hometown(social_graph, poi_graph)
+poi.update_user_hometown(social_graph, poi_graph)
 cal_sim_matrix(user_list, place_list, poi_graph, social_graph)
 # cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
 # cf_item(poi_graph, user_list, place_list, '../output/poi_recommendation/')
