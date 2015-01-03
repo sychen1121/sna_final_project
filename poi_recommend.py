@@ -2,10 +2,10 @@ import poi_graph
 import networkx as nx
 import datetime
 
-# output accuracy
+# output accuracy to result.txt
 def evaluate(testing_path, prediction_path, method):
 	# input: testing file's path, result file's path and method name
-	# output: output the accuracy
+	# output: output the accuracy in result.txt
 	answers = dict()
 	predictions = dict()
 	with open(testing_path+'Gowalla_testing.txt','r') as fi:
@@ -47,6 +47,9 @@ def write_prediction(method, predict_dict):
 				output_str = output_str+'\t'+str(place)
 			fo.write(output_str+'\n')
 
+def cal_sim_matrix(user_list, place_list, poi_graph, social_graph):
+	user_vectors = dict()
+
 
 def cf_user(graph, user_list, place_list, output_path):
 	# for user in user_list:
@@ -60,5 +63,7 @@ def cf_item(graph, user_list, place_list, output_path):
 	return predict_dict
 
 poi_graph, user_list, place_list = poi_graph.create_poi_graph('../input/Gowalla_new/POI/')
-cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
-cf_item(poi_graph, user_list, place_list, '../output/poi_recommendation/')
+social_graph = poi_graph.create_social_graph('../input/Gowalla_new/POI/')
+update_user_hometown(social_graph, poi_graph)
+# cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
+# cf_item(poi_graph, user_list, place_list, '../output/poi_recommendation/')
