@@ -55,8 +55,9 @@ def cal_sim_matrix(user_list, place_list, poi_graph, social_graph):
 	write_sim_json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
 	write_sim_json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
 
-	# user_vectors = dict()
-	# for user in user_list:
+
+# def cal_cosine():
+	
 def norm_vector_by_graph(origin_list, graph):
 	items_norm_dict = dict()
 	# get all norm vectors
@@ -74,7 +75,7 @@ def norm_vector_by_graph(origin_list, graph):
 		items_norm_dict[item] = norm_dict
 	return items_norm_dict
 
-# def write_sim_matrix
+
 def read_sim_json(file_path, file_name):
 	with open(file_path+file_name, 'r') as fi:
 		result_dict = json.loads(fi.read())
@@ -88,7 +89,6 @@ def write_sim_json(output_dict, file_path, file_name):
 
 
 def cf_user(graph, user_list, place_list, output_path):
-	# for user in user_list:
 	# for user in user_list:
 		# graph.node[user]
 	predict_dict = dict()
