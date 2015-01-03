@@ -9,49 +9,48 @@ import json
 
 # output accuracy to result.txt
 def evaluate(testing_path, prediction_path, method):
-	# input: testing file's path, result file's path and method name
-	# output: output the accuracy in result.txt
-	answers = dict()
-	predictions = dict()
-	with open(testing_path+'Gowalla_testing.txt','r') as fi:
-		for line in fi:
-			entry = line.strip().split('\t')
-			user = int(entry[0])
-			place = 'p'+entry[4]
-			if answers.get(user, 0) == 0:
-				answers[user] = place
-			else:
-				answers[user] = answers[user].append(place)
-	with open(prediction_path+'result_'+method+'.txt', 'r') as fi2:
-		for line in fi2:
-			entry = line.strip().split()
-			user = int(entry[0])
-			places = entry[1:-1]
-			predictions[user] = places
-	user_num = len(answers)
-	bingo = 0 
-	for user in predictions.keys():
-		answer_places = answers[user]
-		for place in predictions[user]:
-			if place in answer_places:
-				bingo = bingo+1
-				answer_places.remove(place)
-	accuracy = float(bingo)/(3*len(answers))
-	with open('../output/poi_recommendation/result.txt', 'a') as fo:
-		fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now()))
+    # input: testing file's path, result file's path and method name
+    # output: output the accuracy in result.txt
+    answers = dict()
+    predictions = dict()
+    with open(testing_path+'Gowalla_testing.txt','r') as fi:
+        for line in fi:
+            entry = line.strip().split('\t')
+            user = int(entry[0])
+            place = 'p'+entry[4]
+            if answers.get(user, 0) == 0:
+                answers[user] = place
+            else:
+                answers[user] = answers[user].append(place)
+    with open(prediction_path+'result_'+method+'.txt', 'r') as fi2:
+        for line in fi2:
+            entry = line.strip().split()
+            user = int(entry[0])
+            places = entry[1:-1]
+            predictions[user] = places
+    user_num = len(answers)
+    bingo = 0 
+    for user in predictions.keys():
+        answer_places = answers[user]
+        for place in predictions[user]:
+            if place in answer_places:
+                bingo = bingo+1
+                answer_places.remove(place)
+    accuracy = float(bingo)/(3*len(answers))
+    with open('../output/poi_recommendation/result.txt', 'a') as fo:
+        fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now()))
 
 
 # write prediction dictionary to the file under output/poi_recommendation
 def write_prediction(method, predict_dict):
-	output_path = '../output/poi_recommendation/'
-	predict_list = sorted(predict_dict.keys())
-	with open(output_path+'result_'+method+'.txt', 'w') as fo:
-		for user in predict_list:
-			output_str = str(user)
-			for place in predict_dict[user]:
-				output_str = output_str+'\t'+str(place)
-			fo.write(output_str+'\n')
-
+    output_path = '../output/poi_recommendation/'
+    predict_list = sorted(predict_dict.keys())
+    with open(output_path+'result_'+method+'.txt', 'w') as fo:
+        for user in predict_list:
+            output_str = str(user)
+            for place in predict_dict[user]:
+                output_str = output_str+'\t'+str(place)
+            fo.write(output_str+'\n')
 
 # =============== cf fucntions ==================
 
@@ -62,7 +61,6 @@ def write_vector_matrix(user_list, place_list, poi_graph, social_graph):
 	place_norm_dict = norm_vector_by_graph(place_list, poi_graph)
 	write_vectors2json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
 	write_vectors2json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
-
 
 
 # calculate and write cosine matrix
@@ -116,6 +114,7 @@ def cal_cosine(dict1, dict2):
 
 
 def norm_vector_by_graph(origin_list, graph):
+<<<<<<< HEAD
 	items_norm_dict = dict()
 	# get all norm vectors
 	for item in origin_list:
@@ -131,7 +130,6 @@ def norm_vector_by_graph(origin_list, graph):
 			norm_dict[i] = norm_dict[i]/normValue
 		items_norm_dict[item] = norm_dict
 	return items_norm_dict
-
 
 def read_vectors2json(file_path, file_name):
 	with open(file_path+file_name, 'r') as fi:
@@ -163,7 +161,6 @@ def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output
 	write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
 	write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
 
-
 def cf_user(graph, user_list, place_list, top_k, top_k_file_name, output_path='../output/poi_recommendation'):
 	predict_dict = dict()
 	# read top_k file 
@@ -178,11 +175,23 @@ def cf_user(graph, user_list, place_list, top_k, top_k_file_name, output_path='.
 
 # recommend place to the user by cf item-based model
 def cf_item(graph, user_list, place_list, output_path):
-	predict_dict = dict()
-	return predict_dict
+    predict_dict = dict()
+    return predict_dict
+
+def choice(weighted_choices):
+# weighted_choices is a tuple list such as [(choice1, weight1), (choice2, weight2)]
+    from itertools import accumulate
+    from bisect import bisect
+    from random import random
+    choices, weights = zip(*weighted_choices)
+    cumdist = list(accumulate(weights))
+    x = random() * cumdist[-1]
+    #print('choice',choices[bisect(cumdist, x)])
+    return choices[bisect(cumdist, x)]    
 
 
 cf_preprocess()
 
 # cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
+
 # cf_item(poi_graph, user_list, place_list, '../output/poi_recommendation/')
