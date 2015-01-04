@@ -43,16 +43,16 @@ def place_feature(p_graph,n1,n2):
         overlap_p= len(common_p)*1.0/((pNum1+pNum2)-len(common_p))
     
     aa_ent = 0
-    min_ent = -1
+    min_ent = 0.0
     aa_p =0
-    min_p = -1
+    min_p = 0.0
     
     for place in common_p:
 #         compute min_ent
-        if (min_p == -1) or (p_graph.node[place]['entropy'] < min_ent):
+        if (min_ent == 0.0) or (p_graph.node[place]['entropy'] < min_ent):
             min_ent = p_graph.node[place]['entropy']
 #         compute min_p
-        if (min_p == -1) or (p_graph.node[place]['total_checkin'] < min_ent):
+        if (min_p == 0.0) or (p_graph.node[place]['total_checkin'] < min_ent):
             min_p = p_graph.node[place]['total_checkin']
 #         count aa_ent
         if p_graph.node[place]['entropy']<=0:
