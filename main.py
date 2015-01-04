@@ -112,8 +112,10 @@ if __name__ == '__main__':
                 print('', file=processing_train)
         e = time()
         print('time of processing train', e-s)
-    elif command == 'map_distance':
+    elif command == 'geocode_test':
         poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
         social_graph = poi.create_social_graph(input_path)
-            
+        poi.update_user_hometown(social_graph, poi_graph)
+        poi.update_hometown_geocode(social_graph)
+        print(social_graph.node['4']['hometown'])
     print("end of execution")
