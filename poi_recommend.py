@@ -5,7 +5,14 @@ import json
 
 
 
-# ================ shared methods ====================
+# ================ shared functions ====================
+
+# run method
+def run_method(f):
+	predict_dict = f()
+	method = f.__name__
+	write_prediction(method, predict_dict)
+	evaluate(method)
 
 # output accuracy to result.txt
 def evaluate(method, prediction_path='../output/poi_recommendation/',testing_path='../input/Gowalla_new/POI/'):
@@ -51,6 +58,28 @@ def write_prediction(method, predict_dict):
                 output_str = output_str+'\t'+str(place)
             fo.write(output_str+'\n')
 
+def choice(weighted_choices):
+# weighted_choices is a tuple list such as [(choice1, weight1), (choice2, weight2)]
+    from itertools import accumulate
+    from bisect import bisect
+    from random import random
+    choices, weights = zip(*weighted_choices)
+    cumdist = list(accumulate(weights))
+    x = random() * cumdist[-1]
+    #print('choice',choices[bisect(cumdist, x)])
+    return choices[bisect(cumdist, x)]
+
+def read_vectors2json(file_path, file_name):
+	with open(file_path+file_name, 'r') as fi:
+		result_dict = json.loads(fi.read())
+	return result_dict
+
+def write_vectors2json(output_dict, file_path, file_name):
+	# if need indent?
+	jsonString = json.dumps(output_dict, sort_keys=True)
+	with open(file_path+file_name, 'w') as fo:
+		fo.write(jsonString)
+
 # =============== cf fucntions ==================
 
 def write_vector_matrix(user_list, place_list, poi_graph, social_graph):
@@ -60,6 +89,8 @@ def write_vector_matrix(user_list, place_list, poi_graph, social_graph):
 	place_norm_dict = norm_vector_by_graph(place_list, poi_graph)
 	write_vectors2json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
 	write_vectors2json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
+
+
 
 
 # calculate and write cosine matrix
@@ -129,16 +160,6 @@ def norm_vector_by_graph(origin_list, graph):
 		items_norm_dict[item] = norm_dict
 	return items_norm_dict
 
-def read_vectors2json(file_path, file_name):
-	with open(file_path+file_name, 'r') as fi:
-		result_dict = json.loads(fi.read())
-	return result_dict
-
-def write_vectors2json(output_dict, file_path, file_name):
-	# if need indent?
-	jsonString = json.dumps(output_dict, sort_keys=True)
-	with open(file_path+file_name, 'w') as fo:
-		fo.write(jsonString)
 
 # recommend place to the user by cf user-based model
 def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output/poi_recommendation/',top_k=10):
@@ -159,6 +180,10 @@ def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output
 	write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
 	write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
 
+
+
+# ============= recommend methods ===============
+
 def cf_user(graph, user_list, place_list, top_k, top_k_file_name, output_path='../output/poi_recommendation'):
 	predict_dict = dict()
 	# read top_k file 
@@ -176,16 +201,7 @@ def cf_item(graph, user_list, place_list, output_path):
     predict_dict = dict()
     return predict_dict
 
-def choice(weighted_choices):
-# weighted_choices is a tuple list such as [(choice1, weight1), (choice2, weight2)]
-    from itertools import accumulate
-    from bisect import bisect
-    from random import random
-    choices, weights = zip(*weighted_choices)
-    cumdist = list(accumulate(weights))
-    x = random() * cumdist[-1]
-    #print('choice',choices[bisect(cumdist, x)])
-    return choices[bisect(cumdist, x)]    
+
 
 def most_visited_random_method(output_path='../output/poi_recommendation/'):
 	predict_dict = dict()
@@ -199,10 +215,23 @@ def most_visited_random_method(output_path='../output/poi_recommendation/'):
 		predict_dict[user] = predict_list
 	return predict_dict
 
+def most_visited_one_method(output_path='../output/poi_recommendation/'):
+	predict_dict = dict()
+	file_name = 'user_norm_vector.txt'
+	user_norm_dict = read_vectors2json(output_path, file_name)
+	for user, place_dict in user_norm_dict.items():
+		predict_list = list()
+		place_item = place_dict.items()
+		place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+		for i in range(0,3):
+			predict_list.append(place_rank[0][0])
+		predict_dict[user] = predict_list
+	return predict_dict
 
-predict_dict = most_visited_random_method()
-write_prediction('most_visited_random', predict_dict)
-evaluate('most_visited_random')
+
+# run_method(most_visited_one_method)
+# run_method(most_visited_random_method)
+
 # cf_preprocess()
 
 # cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
