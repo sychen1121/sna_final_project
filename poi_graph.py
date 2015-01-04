@@ -111,8 +111,6 @@ def update_user_hometown(social_graph, poi_graph):
 			# print(node)
 
 
-
-
-poi_graph, user_list, place_list = create_poi_graph('../input/Gowalla_new/POI/')
-social_graph = create_social_graph('../input/Gowalla_new/POI/')
-update_user_hometown(social_graph, poi_graph)
+# poi_graph, user_list, place_list = create_poi_graph('../input/Gowalla_new/POI/')
+# social_graph = create_social_graph('../input/Gowalla_new/POI/')
+# update_user_hometown(social_graph, poi_graph)

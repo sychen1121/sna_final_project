@@ -8,7 +8,7 @@ import json
 # ================ shared methods ====================
 
 # output accuracy to result.txt
-def evaluate(testing_path, prediction_path, method):
+def evaluate(method, prediction_path='../output/poi_recommendation/',testing_path='../input/Gowalla_new/POI/'):
     # input: testing file's path, result file's path and method name
     # output: output the accuracy in result.txt
     answers = dict()
@@ -19,9 +19,8 @@ def evaluate(testing_path, prediction_path, method):
             user = int(entry[0])
             place = 'p'+entry[4]
             if answers.get(user, 0) == 0:
-                answers[user] = place
-            else:
-                answers[user] = answers[user].append(place)
+                answers[user] = list()
+            answers[user].append(place)
     with open(prediction_path+'result_'+method+'.txt', 'r') as fi2:
         for line in fi2:
             entry = line.strip().split()
@@ -38,7 +37,7 @@ def evaluate(testing_path, prediction_path, method):
                 answer_places.remove(place)
     accuracy = float(bingo)/(3*len(answers))
     with open('../output/poi_recommendation/result.txt', 'a') as fo:
-        fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now()))
+        fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now())+'\n')
 
 
 # write prediction dictionary to the file under output/poi_recommendation
@@ -188,8 +187,23 @@ def choice(weighted_choices):
     #print('choice',choices[bisect(cumdist, x)])
     return choices[bisect(cumdist, x)]    
 
+def most_visited_random_method(output_path='../output/poi_recommendation/'):
+	predict_dict = dict()
+	file_name = 'user_norm_vector.txt'
+	user_norm_dict = read_vectors2json(output_path, file_name)
+	for user, place_dict in user_norm_dict.items():
+		predict_list = list()
+		place_item = place_dict.items()
+		for i in range(0,3):
+			predict_list.append(choice(place_item))
+		predict_dict[user] = predict_list
+	return predict_dict
 
-cf_preprocess()
+
+predict_dict = most_visited_random_method()
+write_prediction('most_visited_random', predict_dict)
+evaluate('most_visited_random')
+# cf_preprocess()
 
 # cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
 
