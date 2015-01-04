@@ -1,7 +1,7 @@
 import poi_graph as poi
 import poi_recommend as pr
 
-
+# add this for testing
 def get_place_visited_ratio(output_path = '../output/poi_recommendation/',testing_path='../input/Gowalla_new/POI/'):
 	answers = dict()
 	ratio = float()
