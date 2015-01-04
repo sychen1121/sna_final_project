@@ -44,7 +44,11 @@ def worker(social_graph, checkin_graph, edges, out_q):
         n2 = edge[1]
         common_n, overlap_n, aa_n, pa = ft.social_feature(social_graph, n1, n2)
         common_p, overlap_p, w_common_p, w_overlap_p, aa_ent, min_ent, aa_p, min_p = ft.place_feature(checkin_graph, n1, n2)
-        out_list.append((n1, n2, common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p))
+        if len(edge) == 3:
+            answer = edge[2]
+            out_list.append((answer, n1, n2, common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p))
+        else:
+            out_list.append((n1, n2, common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p))
     out_q.put(out_list)
 
 if __name__ == '__main__':
@@ -68,9 +72,9 @@ if __name__ == '__main__':
         edges_list = list()
         for line in test:
             entry = line.strip().split()
-            edges_list.append((int(entry[0]), int(entry[1])))
+            edges_list.append((int(entry[0]), int(entry[1]), entry[2]))
         test_feature_file = open(output_path+'test_feature.csv', 'w')
-        print('label,n1,n2,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p',file=test_feature_file)
+        print('label,answer,n1,n2,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p',file=test_feature_file)
         test_feature = computeFeature(social_graph, checkin_graph, edges_list, nprocs)
         writeFeature(test_feature_file, 0, test_feature)
     elif command == 'map_verify':
