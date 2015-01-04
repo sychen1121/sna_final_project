@@ -5,10 +5,17 @@ import json
 
 
 
-# ================ shared methods ====================
+# ================ shared functions ====================
+
+# run method
+def run_method(f):
+	predict_dict = f()
+	method = f.__name__
+	write_prediction(method, predict_dict)
+	evaluate(method)
 
 # output accuracy to result.txt
-def evaluate(testing_path, prediction_path, method):
+def evaluate(method, prediction_path='../output/poi_recommendation/',testing_path='../input/Gowalla_new/POI/'):
     # input: testing file's path, result file's path and method name
     # output: output the accuracy in result.txt
     answers = dict()
@@ -19,9 +26,8 @@ def evaluate(testing_path, prediction_path, method):
             user = int(entry[0])
             place = 'p'+entry[4]
             if answers.get(user, 0) == 0:
-                answers[user] = place
-            else:
-                answers[user] = answers[user].append(place)
+                answers[user] = list()
+            answers[user].append(place)
     with open(prediction_path+'result_'+method+'.txt', 'r') as fi2:
         for line in fi2:
             entry = line.strip().split()
@@ -38,7 +44,7 @@ def evaluate(testing_path, prediction_path, method):
                 answer_places.remove(place)
     accuracy = float(bingo)/(3*len(answers))
     with open('../output/poi_recommendation/result.txt', 'a') as fo:
-        fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now()))
+        fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now())+'\n')
 
 
 # write prediction dictionary to the file under output/poi_recommendation
@@ -52,8 +58,31 @@ def write_prediction(method, predict_dict):
                 output_str = output_str+'\t'+str(place)
             fo.write(output_str+'\n')
 
+def choice(weighted_choices):
+# weighted_choices is a tuple list such as [(choice1, weight1), (choice2, weight2)]
+    from itertools import accumulate
+    from bisect import bisect
+    from random import random
+    choices, weights = zip(*weighted_choices)
+    cumdist = list(accumulate(weights))
+    x = random() * cumdist[-1]
+    #print('choice',choices[bisect(cumdist, x)])
+    return choices[bisect(cumdist, x)]
+
+def read_vectors2json(file_path, file_name):
+	with open(file_path+file_name, 'r') as fi:
+		result_dict = json.loads(fi.read())
+	return result_dict
+
+def write_vectors2json(output_dict, file_path, file_name):
+	# if need indent?
+	jsonString = json.dumps(output_dict, sort_keys=True)
+	with open(file_path+file_name, 'w') as fo:
+		fo.write(jsonString)
+
 # =============== cf fucntions ==================
 
+# ====vectors of places and users
 def write_vector_matrix(user_list, place_list, poi_graph, social_graph):
 	# norm users vector and then output
 	# norm items vector and then output
@@ -61,57 +90,6 @@ def write_vector_matrix(user_list, place_list, poi_graph, social_graph):
 	place_norm_dict = norm_vector_by_graph(place_list, poi_graph)
 	write_vectors2json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
 	write_vectors2json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
-
-
-# calculate and write cosine matrix
-def write_cosine_matrix(matrix_dict, output_path,cos_file_name):
-	print('start computing cosine matrix')
-	cos_matrix_dict = dict()
-	item_list = sorted(matrix_dict.keys())
-	# for every item, calculating cosine similarity
-	for i, itemi in enumerate(item_list):
-		sim_dict = dict()
-		j = i+1
-		while j < len(item_list):
-			print(j)
-			itemj = item_list[j]
-			cos = cal_cosine(matrix_dict[itemi], matrix_dict[itemj])
-			try: 
-				cos_matrix_dict[itemi][itemj] = cos
-			except:
-				cos_matrix_dict[itemi] = dict()
-				cos_matrix_dict[itemi][itemj] = cos
-			try:			
-				cos_matrix_dict[itemj][itemi] = cos
-			except:
-				cos_matrix_dict[itemj] = dict()
-				cos_matrix_dict[itemj][itemi] = cos
-			j = j+1
-	write_vectors2json(cos_matrix_dict, output_path, cos_file_name)
-
-	
-# write top k cosine matrix to the file
-def write_top_k_cosine_matrix(file_path, file_name, top_k, top_k_cos_file_name):
-	top_k_matrix_dict = dict()
-	cos_matrix_dict = read_vectors2json(file_path, file_name)
-	for item, cos_dict in cos_matrix_dict.items():
-		cos_list = sorted(cos_dict.iteritems(), key=lambda d:d[1], reverse = True)[0:top_k]
-		top_k_cos_dict = dict()
-		for t in cos_list:
-			top_k_cos_dict[t[0]] = t[1]
-		top_k_matrix_dict[item] = top_k_cos_dict
-	write_vectors2json(top_k_matrix_dict, file_path, top_k_cos_file_name)
-
-
-
-# calculate the cosine of two vectors
-def cal_cosine(dict1, dict2):
-	# input two norm vector
-	cos = float()
-	for item in dict1.keys():
-		cos = cos + dict1.get(item, 0)*dict2.get(item, 0)
-	return cos
-
 
 def norm_vector_by_graph(origin_list, graph):
 	items_norm_dict = dict()
@@ -130,35 +108,96 @@ def norm_vector_by_graph(origin_list, graph):
 		items_norm_dict[item] = norm_dict
 	return items_norm_dict
 
-def read_vectors2json(file_path, file_name):
-	with open(file_path+file_name, 'r') as fi:
-		result_dict = json.loads(fi.read())
-	return result_dict
+# ======= cal cosines
+def write_users_cosine(output_path, top_k, social_graph):
+	user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+	user_list = user_vectors_dict.keys()
+	# get candidates
+	user_candidates_dict = dict()
+	for user in user_list:
+		two_level_friends = set()
+		for n in social_graph.neighbors(user):
+			if n in user_list:
+				two_level_friends.add(n)
+			for n2 in social_graph.neighbors(n):
+				if n2 in user_list:
+					two_level_friends.add(n2)
+		two_level_friends = list(two_level_friends)
+		user_candidates_dict[user] = two_level_friends
+	write_cosine_matrix(user_vectors_dict, user_candidates_dict, output_path, 'user_cosine_matrix.txt')
+	write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
 
-def write_vectors2json(output_dict, file_path, file_name):
-	# if need indent?
-	jsonString = json.dumps(output_dict, sort_keys=True)
-	with open(file_path+file_name, 'w') as fo:
-		fo.write(jsonString)
+
+# calculate and write cosine matrix
+def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name):
+	print('start computing cosine matrix')
+	cos_matrix_dict = dict()
+	item_list = sorted(vectors_dict.keys())
+	# for every item, calculating cosine similarity
+	for item in item_list:
+		candidate_list = candidates_dict[item]
+		for candidate in candidate_list:
+			cos = cal_cosine(vectors_dict[item], vectors_dict[candidate])
+			try: 
+				cos_matrix_dict[item][candidate] = cos
+			except:
+				cos_matrix_dict[item] = dict()
+				cos_matrix_dict[item][candidate] = cos
+	write_vectors2json(cos_matrix_dict, output_path, cos_file_name)
+
+	
+# write top k cosine matrix to the file
+def write_top_k_cosine_matrix(file_path, file_name, top_k, top_k_cos_file_name):
+	top_k_matrix_dict = dict()
+	cos_matrix_dict = read_vectors2json(file_path, file_name)
+	for item, cos_dict in cos_matrix_dict.items():
+		top_k = min(top_k, len(cos_dict))
+		cos_list = sorted(cos_dict.iteritems(), key=lambda d:d[1], reverse = True)[0:top_k]
+		top_k_cos_dict = dict()
+		for t in cos_list:
+			top_k_cos_dict[t[0]] = t[1]
+		top_k_matrix_dict[item] = top_k_cos_dict
+	write_vectors2json(top_k_matrix_dict, file_path, top_k_cos_file_name)
+
+
+
+# calculate the cosine of two vectors
+def cal_cosine(dict1, dict2):
+	# input two norm vector
+	cos = float()
+	for item in dict1.keys():
+		cos = cos + dict1.get(item, 0)*dict2.get(item, 0)
+	return cos
+
+
+
+
 
 # recommend place to the user by cf user-based model
 def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output/poi_recommendation/',top_k=10):
 	# # load social and poi graph
 	# poi_graph, user_list, place_list = poi.create_poi_graph(input_path)
-	# social_graph = poi.create_social_graph(input_path)
+	social_graph = poi.create_social_graph(input_path)
 	# poi.update_user_hometown(social_graph, poi_graph)
 
 	# # write vectors of users or places
 	# write_vector_matrix(user_list, place_list, poi_graph, social_graph)
 
-	# read vectors of user or places and write cosine sim
-	user_vector_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
-	print('over read user')
-	place_vector_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
-	write_cosine_matrix(user_vector_dict, output_path, 'user_cosine_matrix.txt')
-	write_cosine_matrix(place_vector_dict, output_path, 'place_cosine_matrix.txt')
-	write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
-	write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
+	
+	# cal user cosine matrix by social graph
+	print('start cf user-based')
+	write_users_cosine(output_path, top_k, social_graph)
+	
+	# write_cosine_matrix(user_vector_dict, output_path, 'user_cosine_matrix.txt')
+	# write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
+
+	# place_vector_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
+	# write_cosine_matrix(place_vector_dict, output_path, 'place_cosine_matrix.txt')
+	# write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
+
+
+
+# ============= recommend methods ===============
 
 def cf_user(graph, user_list, place_list, top_k, top_k_file_name, output_path='../output/poi_recommendation'):
 	predict_dict = dict()
@@ -177,17 +216,36 @@ def cf_item(graph, user_list, place_list, output_path):
     predict_dict = dict()
     return predict_dict
 
-def choice(weighted_choices):
-# weighted_choices is a tuple list such as [(choice1, weight1), (choice2, weight2)]
-    from itertools import accumulate
-    from bisect import bisect
-    from random import random
-    choices, weights = zip(*weighted_choices)
-    cumdist = list(accumulate(weights))
-    x = random() * cumdist[-1]
-    #print('choice',choices[bisect(cumdist, x)])
-    return choices[bisect(cumdist, x)]    
 
+
+def most_visited_random_method(output_path='../output/poi_recommendation/'):
+	predict_dict = dict()
+	file_name = 'user_norm_vector.txt'
+	user_norm_dict = read_vectors2json(output_path, file_name)
+	for user, place_dict in user_norm_dict.items():
+		predict_list = list()
+		place_item = place_dict.items()
+		for i in range(0,3):
+			predict_list.append(choice(place_item))
+		predict_dict[user] = predict_list
+	return predict_dict
+
+def most_visited_one_method(output_path='../output/poi_recommendation/'):
+	predict_dict = dict()
+	file_name = 'user_norm_vector.txt'
+	user_norm_dict = read_vectors2json(output_path, file_name)
+	for user, place_dict in user_norm_dict.items():
+		predict_list = list()
+		place_item = place_dict.items()
+		place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+		for i in range(0,3):
+			predict_list.append(place_rank[0][0])
+		predict_dict[user] = predict_list
+	return predict_dict
+
+
+# run_method(most_visited_one_method)
+# run_method(most_visited_random_method)
 
 cf_preprocess()
 

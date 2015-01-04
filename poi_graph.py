@@ -4,16 +4,17 @@ from time import time
 
 # create link between users
 def create_social_graph(file_path):
-    social_graph = nx.Graph()
-    with open(file_path+'Gowalla_edges.txt','r') as fu:
-        for line in fu:
-            users = line.strip().split()
-            usera = int(users[0])
-            userb = int(users[1])
-            social_graph.add_node(usera, type='user', followers=0, hometown='None')
-            social_graph.add_edge(usera, userb)
-    update_user_info(file_path, social_graph)
-    return social_graph
+	social_graph = nx.Graph()
+	with open(file_path+'Gowalla_edges.txt','r') as fu:
+		for line in fu:
+			users = line.strip().split()
+			usera = users[0]
+			userb = users[1]
+			social_graph.add_node(usera, type='user', followers=0, hometown='None')
+			social_graph.add_node(userb, type='user', followers=0, hometown='None')
+			social_graph.add_edge(usera, userb)
+	update_user_info(file_path, social_graph)
+	return social_graph
 
 # create users, places and links btw users and places
 def create_poi_graph_from_file(file_path):
@@ -107,7 +108,6 @@ def create_poi_graph(file_path):
     update_place_info(file_path, poi_graph)
     e=time()
     print('time of creating poi_graph', e-s)
-
     return poi_graph, user_list, place_list
 
 # add total checkin
@@ -131,14 +131,15 @@ def update_place_info(file_path, graph):
 
 # add hometown and followers information
 def update_user_info(file_path, graph):
-    user_file_name = 'users_info_new.dat'
-    with open(file_path+user_file_name,'r') as user_file:
-        for line in user_file:
-            entry = line.strip().split('\t')
-            user = int(entry[0])
-            hometown = entry[2]
-            follower_count = int(entry[4])
-            graph.add_node(user, type='user', followers=follower_count, hometown=hometown)
+	user_file_name = 'users_info_new.dat'
+	with open(file_path+user_file_name,'r') as user_file:
+		for line in user_file:
+			entry = line.strip().split('\t')
+			user = entry[0]
+			hometown = entry[2]
+			follower_count = int(entry[4])
+			graph.add_node(user, type='user', followers=follower_count, hometown=hometown)
+
 
 # make the most visited place as home
 def update_user_hometown(social_graph, poi_graph):
@@ -164,10 +165,3 @@ def update_user_hometown(social_graph, poi_graph):
         # if node[1]['hometown'] != 'None':
             # print(node)
 
-
-
-
-#poi_graph, user_list, place_list = create_poi_graph('../input/Gowalla_new/POI/')
-#social_graph = create_social_graph('../input/Gowalla_new/POI/')
-#update_user_hometown(social_graph, poi_graph)
-#print('end of poi_graph')
