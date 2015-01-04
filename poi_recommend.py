@@ -16,58 +16,58 @@ def run_method(f):
 
 # output accuracy to result.txt
 def evaluate(method, prediction_path='../output/poi_recommendation/',testing_path='../input/Gowalla_new/POI/'):
-    # input: testing file's path, result file's path and method name
-    # output: output the accuracy in result.txt
-    answers = dict()
-    predictions = dict()
-    with open(testing_path+'Gowalla_testing.txt','r') as fi:
-        for line in fi:
-            entry = line.strip().split('\t')
-            user = int(entry[0])
-            place = 'p'+entry[4]
-            if answers.get(user, 0) == 0:
-                answers[user] = list()
-            answers[user].append(place)
-    with open(prediction_path+'result_'+method+'.txt', 'r') as fi2:
-        for line in fi2:
-            entry = line.strip().split()
-            user = int(entry[0])
-            places = entry[1:-1]
-            predictions[user] = places
-    user_num = len(answers)
-    bingo = 0 
-    for user in predictions.keys():
-        answer_places = answers[user]
-        for place in predictions[user]:
-            if place in answer_places:
-                bingo = bingo+1
-                answer_places.remove(place)
-    accuracy = float(bingo)/(3*len(answers))
-    with open('../output/poi_recommendation/result.txt', 'a') as fo:
-        fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now())+'\n')
+	# input: testing file's path, result file's path and method name
+	# output: output the accuracy in result.txt
+	answers = dict()
+	predictions = dict()
+	with open(testing_path+'Gowalla_testing.txt','r') as fi:
+		for line in fi:
+			entry = line.strip().split('\t')
+			user = entry[0]
+			place = 'p'+entry[4]
+			if answers.get(user, 0) == 0:
+				answers[user] = list()
+			answers[user].append(place)
+	with open(prediction_path+'result_'+method+'.txt', 'r') as fi2:
+		for line in fi2:
+			entry = line.strip().split()
+			user = entry[0]
+			places = entry[1:-1]
+			predictions[user] = places
+	user_num = len(answers)
+	bingo = 0 
+	for user in predictions.keys():
+		answer_places = answers[user]
+		for place in predictions[user]:
+			if place in answer_places:
+				bingo = bingo+1
+				answer_places.remove(place)
+	accuracy = float(bingo)/(3*len(answers))
+	with open('../output/poi_recommendation/result.txt', 'a') as fo:
+		fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now())+'\n')
 
 
 # write prediction dictionary to the file under output/poi_recommendation
 def write_prediction(method, predict_dict):
-    output_path = '../output/poi_recommendation/'
-    predict_list = sorted(predict_dict.keys())
-    with open(output_path+'result_'+method+'.txt', 'w') as fo:
-        for user in predict_list:
-            output_str = str(user)
-            for place in predict_dict[user]:
-                output_str = output_str+'\t'+str(place)
-            fo.write(output_str+'\n')
+	output_path = '../output/poi_recommendation/'
+	predict_list = sorted(predict_dict.keys())
+	with open(output_path+'result_'+method+'.txt', 'w') as fo:
+		for user in predict_list:
+			output_str = str(user)
+			for place in predict_dict[user]:
+				output_str = output_str+'\t'+str(place)
+			fo.write(output_str+'\n')
 
 def choice(weighted_choices):
 # weighted_choices is a tuple list such as [(choice1, weight1), (choice2, weight2)]
-    from itertools import accumulate
-    from bisect import bisect
-    from random import random
-    choices, weights = zip(*weighted_choices)
-    cumdist = list(accumulate(weights))
-    x = random() * cumdist[-1]
-    #print('choice',choices[bisect(cumdist, x)])
-    return choices[bisect(cumdist, x)]
+	from itertools import accumulate
+	from bisect import bisect
+	from random import random
+	choices, weights = zip(*weighted_choices)
+	cumdist = list(accumulate(weights))
+	x = random() * cumdist[-1]
+	#print('choice',choices[bisect(cumdist, x)])
+	return choices[bisect(cumdist, x)]
 
 def read_vectors2json(file_path, file_name):
 	with open(file_path+file_name, 'r') as fi:
@@ -237,17 +237,17 @@ def cf_user(top_k=10, output_path='../output/poi_recommendation'):
 
 # recommend place to the user by cf item-based model
 def cf_item(top_k=10, output_path='../output/poi_recommendation'):
-    predict_dict = dict()
-    user_near_places = read_vectors2json(output_path, '')
+	predict_dict = dict()
+	user_near_places = read_vectors2json(output_path, '')
 	user_list = user_near_places.keys()
 	# need to be add
-    for user in user_list:
+	for user in user_list:
 		predict_list = list()
 		for i in range(0,3):
 			predict_list.append(choice(place_item))
 		predict_dict[user] = predict_list
 	return predict_dict
-    return predict_dict
+	return predict_dict
 
 
 
@@ -276,9 +276,12 @@ def most_visited_one_method(output_path='../output/poi_recommendation/'):
 		predict_dict[user] = predict_list
 	return predict_dict
 
+# add time stamp in location to predict 
+
 
 # run_method(most_visited_one_method)
 # run_method(most_visited_random_method)
-run_method(cf_user)
+
+# run_method(cf_user)
 
 # cf_preprocess()
