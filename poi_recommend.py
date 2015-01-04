@@ -2,7 +2,7 @@ import poi_graph as poi
 import networkx as nx
 import datetime
 import json
-
+from time import time
 
 
 # ================ shared functions ====================
@@ -114,6 +114,7 @@ def write_users_cosine(output_path, top_k, social_graph):
 	user_list = user_vectors_dict.keys()
 	# get candidates
 	user_candidates_dict = dict()
+	# write social candidates
 	for user in user_list:
 		two_level_friends = set()
 		for n in social_graph.neighbors(user):
@@ -132,9 +133,12 @@ def write_users_cosine(output_path, top_k, social_graph):
 def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name):
 	print('start computing cosine matrix')
 	cos_matrix_dict = dict()
-	item_list = sorted(vectors_dict.keys())
+	item_list = sorted(candidates_dict.keys())
 	# for every item, calculating cosine similarity
+
 	for item in item_list:
+		s = time()
+		print(item)
 		candidate_list = candidates_dict[item]
 		for candidate in candidate_list:
 			cos = cal_cosine(vectors_dict[item], vectors_dict[candidate])
@@ -143,6 +147,8 @@ def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_nam
 			except:
 				cos_matrix_dict[item] = dict()
 				cos_matrix_dict[item][candidate] = cos
+		e= time()
+		print(e-s)
 	write_vectors2json(cos_matrix_dict, output_path, cos_file_name)
 
 	
@@ -150,9 +156,11 @@ def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_nam
 def write_top_k_cosine_matrix(file_path, file_name, top_k, top_k_cos_file_name):
 	top_k_matrix_dict = dict()
 	cos_matrix_dict = read_vectors2json(file_path, file_name)
+	top_k = top_k+1
+	print('over reading')
 	for item, cos_dict in cos_matrix_dict.items():
-		top_k = min(top_k, len(cos_dict))
-		cos_list = sorted(cos_dict.iteritems(), key=lambda d:d[1], reverse = True)[0:top_k]
+		end = min(top_k, len(cos_dict))
+		cos_list = sorted(cos_dict.items(), key=lambda d:d[1], reverse = True)[1:end]
 		top_k_cos_dict = dict()
 		for t in cos_list:
 			top_k_cos_dict[t[0]] = t[1]
@@ -177,20 +185,19 @@ def cal_cosine(dict1, dict2):
 def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output/poi_recommendation/',top_k=10):
 	# # load social and poi graph
 	# poi_graph, user_list, place_list = poi.create_poi_graph(input_path)
-	social_graph = poi.create_social_graph(input_path)
+	# social_graph = poi.create_social_graph(input_path)
 	# poi.update_user_hometown(social_graph, poi_graph)
 
 	# # write vectors of users or places
 	# write_vector_matrix(user_list, place_list, poi_graph, social_graph)
 
 	
-	# cal user cosine matrix by social graph
-	print('start cf user-based')
-	write_users_cosine(output_path, top_k, social_graph)
-	
-	# write_cosine_matrix(user_vector_dict, output_path, 'user_cosine_matrix.txt')
-	# write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
+	# # cal user cosine matrix by social graph
+	# print('start cf user-based')
+	# write_users_cosine(output_path, top_k, social_graph)
+	write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
 
+	# cal place cosine matrix
 	# place_vector_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
 	# write_cosine_matrix(place_vector_dict, output_path, 'place_cosine_matrix.txt')
 	# write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
@@ -199,21 +206,47 @@ def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output
 
 # ============= recommend methods ===============
 
-def cf_user(graph, user_list, place_list, top_k, top_k_file_name, output_path='../output/poi_recommendation'):
+def cf_user(top_k=10, output_path='../output/poi_recommendation'):
 	predict_dict = dict()
+	user_near_places = read_vectors2json(output_path, '')
+	user_list = user_near_places.keys()
 	# read top_k file 
 	cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
-	# cal places score
-	# user_avg_score = 
-	# output top 3 score places
-	# cal write prediction
-	# evaluation
-	
+	user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+	# cal user avg score
+	user_avg_dict = dict()
+	for user, place_dict in user_vectors_dict.items():
+		avg = sum(place_dict.values())/float(len(place_dict))
+		user_avg_dict[user] = avg
+	# start to cal unknown places
+	for user in user_list:
+		candi_list = user_near_places[user]
+		avg = user_avg_dict[user]
+		for place in candi_list:
+			place_score = avg
+			for sim_user, cos in cos_matrix_dict[user].items():
+				place_score = place_score+cos*user_vectors_dict[user][place] 
+			user_vectors_dict[place] = place_score
+	write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
+	for user in user_list:
+		predict_list = list()
+		for i in range(0,3):
+			predict_list.append(choice(place_item))
+		predict_dict[user] = predict_list
 	return predict_dict
 
 # recommend place to the user by cf item-based model
-def cf_item(graph, user_list, place_list, output_path):
+def cf_item(top_k=10, output_path='../output/poi_recommendation'):
     predict_dict = dict()
+    user_near_places = read_vectors2json(output_path, '')
+	user_list = user_near_places.keys()
+	# need to be add
+    for user in user_list:
+		predict_list = list()
+		for i in range(0,3):
+			predict_list.append(choice(place_item))
+		predict_dict[user] = predict_list
+	return predict_dict
     return predict_dict
 
 
@@ -246,9 +279,6 @@ def most_visited_one_method(output_path='../output/poi_recommendation/'):
 
 # run_method(most_visited_one_method)
 # run_method(most_visited_random_method)
+run_method(cf_user)
 
-cf_preprocess()
-
-# cf_user(poi_graph, user_list, place_list, '../output/poi_recommendation/')
-
-# cf_item(poi_graph, user_list, place_list, '../output/poi_recommendation/')
+# cf_preprocess()
