@@ -58,6 +58,7 @@ def create_poi_graph_from_file(file_path):
         place_list.append(placeID)
         tmp_list.append((placeID, {'lat':lat, 'lng':lng, 'total_checkin': total_checkin}))
     poi_graph.add_nodes_from(tmp_list)
+    update_place_info(file_path, poi_graph)
     e=time()
     print('time of creating poi_graph from file', e-s)
 
