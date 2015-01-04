@@ -114,5 +114,6 @@ if __name__ == '__main__':
         print('time of processing train', e-s)
     elif command == 'map_distance':
         poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
+        social_graph = poi.create_social_graph(input_path)
             
     print("end of execution")
