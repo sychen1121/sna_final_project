@@ -112,7 +112,7 @@ if __name__ == '__main__':
                 print('', file=processing_train)
         e = time()
         print('time of processing train', e-s)
-    elif command == 'poi_compare':
-    #    poi_graph1, user_list1, place_list1 = poi.create_poi_graph(input_path)
-        poi_graph2, user_list2, place_list2 = poi.create_poi_graph_from_file(input_path)
+    elif command == 'map_distance':
+        poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
+            
     print("end of execution")
