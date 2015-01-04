@@ -8,9 +8,10 @@ def create_social_graph(file_path):
 	with open(file_path+'Gowalla_edges.txt','r') as fu:
 		for line in fu:
 			users = line.strip().split()
-			usera = int(users[0])
-			userb = int(users[1])
+			usera = users[0]
+			userb = users[1]
 			social_graph.add_node(usera, type='user', followers=0, hometown='None')
+			social_graph.add_node(userb, type='user', followers=0, hometown='None')
 			social_graph.add_edge(usera, userb)
 	update_user_info(file_path, social_graph)
 	return social_graph
@@ -27,7 +28,7 @@ def create_poi_graph(file_path):
 	with open(file_path+'Gowalla_training.txt', 'r') as fi:
 		for line in fi:
 			entry = line.strip().split()
-			user = int(entry[0])
+			user = entry[0]
 			latitude = entry[2]
 			longtitude = entry[3]
 			place = entry[-1]
@@ -81,7 +82,7 @@ def update_user_info(file_path, graph):
 	with open(file_path+user_file_name,'r') as user_file:
 		for line in user_file:
 			entry = line.strip().split('\t')
-			user = int(entry[0])
+			user = entry[0]
 			hometown = entry[2]
 			follower_count = int(entry[4])
 			graph.add_node(user, type='user', followers=follower_count, hometown=hometown)
