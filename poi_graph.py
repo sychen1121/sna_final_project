@@ -15,6 +15,54 @@ def create_social_graph(file_path):
     update_user_info(file_path, social_graph)
     return social_graph
 
+# create users, places and links btw users and places
+def create_poi_graph_from_file(file_path):
+    from time import time
+    poi_graph = nx.Graph()
+    user_list = list()
+    place_list = list()
+    s=time()
+    training_file = open(file_path+'processing_Gowalla_train.txt', 'r')
+    edge_list = list()
+    # create user-place edge with attribute number of checkin and checkin time list
+    for line in training_file:
+        entry = line.strip().split()
+        user = int(entry[0])
+        placeID = entry[1]
+        num_checkin = int(entry[2])
+        time_list = list()
+        for i in range(num_checkin):
+#            checkin_time = dt.datetime.strptime(entry[3+i], "%Y-%m-%dT%H:%M:%SZ")
+            checkin_time = entry[3+i]
+            time_list.append(checkin_time)
+        edge_list.append((user, placeID, {'num_checkin':num_checkin, 'checkin_time_list':time_list}))
+    poi_graph.add_edges_from(edge_list)
+    # create user list from user statistic
+    user_stat = open(file_path+'user_stat.txt', 'r')
+    tmp_list = list()
+    for line in user_stat:
+       user = int(line.strip().split()[0]) 
+       total_checkin_spot = int(line.strip().split()[1])
+       tmp_list.append((user, {'total_checkin_spot': total_checkin_spot}))
+       user_list.append(user)
+    poi_graph.add_nodes_from(tmp_list)
+    # create place list and add place info into poi_graph
+    checkin_spot_stat = open(file_path+'checkin_spot_stat.txt', 'r')
+    tmp_list = list()
+    for line in checkin_spot_stat:
+        entry = line.strip().split()
+        placeID = entry[0]
+        lat = float(entry[1])
+        lng = float(entry[2])
+        total_checkin = int(entry[3])
+        place_list.append(placeID)
+        tmp_list.append((placeID, {'lat':lat, 'lng':lng, 'total_checkin': total_checkin}))
+    poi_graph.add_nodes_from(tmp_list)
+    e=time()
+    print('time of creating poi_graph from file', e-s)
+
+    return poi_graph, user_list, place_list
+    
 
 # create users, places, and links between users and places
 def create_poi_graph(file_path):
@@ -33,8 +81,9 @@ def create_poi_graph(file_path):
             latitude = entry[2]
             longtitude = entry[3]
             place = entry[-1]
-            date_string = entry[1]
-            checkin_time = dt.datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+            #date_string = entry[1]
+            #checkin_time = dt.datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+            checkin_time = entry[1]
             placeID = 'p'+place
             if poi_graph.has_node(placeID):
                 total_checkin = poi_graph.node[placeID]['total_checkin']
