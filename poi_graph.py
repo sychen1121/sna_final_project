@@ -1,5 +1,7 @@
 import networkx as nx
 import datetime as dt
+import math
+from poi_recommend import write_vectors2json
 from time import time
 
 # create link between users
@@ -185,7 +187,7 @@ def spot_candidate(social_graph,poi_graph):
     candidate_userpair = dict()
     for user in social_graph.nodes():
         max_dis = 0.0
-        farest_spot = NULL
+        
         location = social_graph.node[user]['hometown'] 
         checked_set = poi_graph.neighbors(user)
         
@@ -195,7 +197,6 @@ def spot_candidate(social_graph,poi_graph):
             
             if distance > max_dis:
                 max_dis = distance
-                farest_spot = spot
 
         spot_list = checked_set
         for public_spot in poi_graph.nodes():
