@@ -1,6 +1,6 @@
 program=src/main.py
-input_path=input/Gowalla_new/POI/
-output_path=output/poi_recommendation/
+input_path=input/Gowalla_new/link_prediction/
+output_path=output/link_prediction/
 nproc=8
 func=$1
 
