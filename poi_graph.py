@@ -27,7 +27,7 @@ def create_poi_graph_from_file(file_path):
     # create user-place edge with attribute number of checkin and checkin time list
     for line in training_file:
         entry = line.strip().split()
-        user = int(entry[0])
+        user = entry[0]
         placeID = entry[1]
         num_checkin = int(entry[2])
         time_list = list()
@@ -41,7 +41,7 @@ def create_poi_graph_from_file(file_path):
     user_stat = open(file_path+'user_stat.txt', 'r')
     tmp_list = list()
     for line in user_stat:
-       user = int(line.strip().split()[0]) 
+       user = line.strip().split()[0]
        total_checkin_spot = int(line.strip().split()[1])
        tmp_list.append((user, {'total_checkin_spot': total_checkin_spot}))
        user_list.append(user)
