@@ -113,6 +113,15 @@ def compute_entropy(checkin_info, place):
         entropy += fraction * log(fraction)
     entropy *= -1
     return entropy    
+def get_geocode(address):
+    """obtain a geocode of an address by using google map api"""
+    import googlemaps as gmaps
+    client = gmaps.Client(key='AIzaSyABja4kcCMTjVLYMepiO5q2MtoWuxfK7NI')
+    tmp = client.geocode(address)
+    lat = float(tmp[0]['geometry']['location']['lat'])
+    lng = float(tmp[0]['geometry']['location']['lng'])
+    return (lat, lng)
+
 def get_distance(origins, destinations):
     """
         obtain distances from origins to destinations
