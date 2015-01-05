@@ -2,6 +2,7 @@ import networkx as nx
 import datetime as dt
 import math
 from poi_recommend import write_vectors2json
+from poi_recommend import read_vectors2json
 from time import time
 
 # create link between users
@@ -180,6 +181,39 @@ def update_user_hometown(social_graph, poi_graph):
         # if node[1]['hometown'] != 'None':
             # print(node)
 # ===candidate====for each user=============
+
+def spot_candidate2(social_graph, poi_graph, user_list, place_list, output_path='../output/poi_recommendation/'):
+	user_near_places = dict()
+	for user in user_list:
+		f_lat = float()
+		f_lnt = float()
+
+		hometown = social_graph.node[user]['hometown']
+		h_lat = hometown[0]
+		h_lnt = hometown[1]
+		checked_spots = poi_graph.neighbors(user)
+
+		# get max lat and lnt
+		for spot in checked_spots:
+			dc_lat = abs(poi_graph.node[spot]['lat']-h_lat)
+			dc_lng = abs(poi_graph.node[spot]['lng']-h_lng)
+			if dc_lat > f_lat:
+				f_lat = dc_lat
+			if dc_lng > f_lng:
+				f_lng = dc_lng
+
+		unvisited_spots = set(place_list)-set(checked_spots)
+		near_spots = list()
+		for public_spot in unvisited_spots:
+			dp_lat = abs(poi_graph.node[public_spot]['lat']-h_lat)
+			dp_lng = abs(poi_graph.node[public_spot]['lng']-h_lng)
+			if dp_lat<f_lat and dp_lng<f_lng:
+				near_spots.append(public_spot)
+		user_near_places[user] = near_spots
+		write_vectors2json(user_near_places, output_path, 'user_near_placas.txt')
+		return user_near_placas
+
+
 def geo_dist(l1,l2):
     return math.sqrt((l2[1]-l1[1])**2 + (l2[0]-l1[0])**2)
     
