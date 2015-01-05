@@ -33,9 +33,13 @@ def create_checkin_info(file_path):
     checkin_info = nx.Graph()    
     checkin_file = open(file_path+'checkins_info.dat', 'r')
     s = time()
+    sum=list()
+    u=0
     for line in checkin_file:
+        u+=1
         entry = line.strip().split()
         user = int(entry[0])
+        sum.append(len(entry))
         for checkin in entry[1:]:
             place = (int(checkin.split(':')[3]))
             date_string = checkin.split('Z')[0]
@@ -59,6 +63,11 @@ def create_checkin_info(file_path):
                     lat=0.0, lng=0.0, total_checkin_spot=0)
     e = time()
     print("time of checkin:", e-s)
+#    key=set(sum)
+#    result = dict()
+#    for k in key:
+#        result[k]=sum.count(k)
+#    print('num of checkin stat:',result, 'total_user:',u)
 # to get number of checkin:
 # number of checkin = checkin_info.edge[user][place]['num_checkin']
 
@@ -76,8 +85,8 @@ def create_checkin_info(file_path):
     update_user_hometown(checkin_info)
     e = time()
     print("time of update_user_hometown",e-s)
-    print('2999', checkin_info.node[checkin_info.node[2999]['hometown']]['lat'])
-    print('1303883',checkin_info.node[checkin_info.node[1303883]['hometown']]['lat'])
+#    print('2999', checkin_info.node[checkin_info.node[2999]['hometown']]['lat'])
+#    print('1303883',checkin_info.node[checkin_info.node[1303883]['hometown']]['lat'])
 #    print(checkin_info.node['p378468'])
 #    print(checkin_info.node['p6616040'])
 
@@ -91,6 +100,7 @@ def update_user_hometown(checkin_info):
             for p in checkin_places:
                 checkin_num_list.append((p, checkin_info.edge[u][p]['num_checkin']))
             h_id, checkin = max(checkin_num_list, key=lambda x: x[1])
+#            print(u,checkin)
             checkin_info.add_node(u, hometown=h_id)
 
 def update_place_info(file_path, checkin_info):
