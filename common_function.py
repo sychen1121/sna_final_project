@@ -76,7 +76,8 @@ def create_checkin_info(file_path):
     update_user_hometown(checkin_info)
     e = time()
     print("time of update_user_hometown",e-s)
-#    print(checkin_info.node[378468])
+    print('2999', checkin_info.node[checkin_info.node[2999]['hometown']]['lat'])
+    print('1303883',checkin_info.node[checkin_info.node[1303883]['hometown']]['lat'])
 #    print(checkin_info.node['p378468'])
 #    print(checkin_info.node['p6616040'])
 
