@@ -9,4 +9,4 @@ poi.update_user_hometown(social_graph, poi_graph)
 # poi.update_hometown_geocode(social_graph, user_list)
 user_near_places = poi.spot_candidate2(social_graph, poi_graph, user_list, place_list,24)
 
-#pr.run_method(cf_user_mp)
+pr.run_method(cf_user_mp)
