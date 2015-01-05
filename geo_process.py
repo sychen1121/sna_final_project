@@ -35,6 +35,7 @@ def geoProcess(hometown_list):
         fw.write(spot+"\t"+str(geo[0])+"\t"+str(geo[1])+"\n")
         print(geo)
         print("==========")
+        fw.flush()
         time.sleep(2)
         
         
