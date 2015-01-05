@@ -210,8 +210,8 @@ def spot_candidate2(social_graph, poi_graph, user_list, place_list, output_path=
 			if dp_lat<f_lat and dp_lng<f_lng:
 				near_spots.append(public_spot)
 		user_near_places[user] = near_spots
-		write_vectors2json(user_near_places, output_path, 'user_near_placas.txt')
-		return user_near_placas
+	write_vectors2json(user_near_places, output_path, 'user_near_placas.txt')
+	return user_near_placas
 
 
 def geo_dist(l1,l2):
