@@ -17,10 +17,10 @@ def social_feature(s_graph,n1,n2):
         
     aa_n =0
     for cn in common_n:
-        if len(s_graph.neighbors(cn))<=0:
-            continue
-        elif len(s_graph.neighbors(cn)) == 1:
-            aa_n += 100.0
+        if len(s_graph.neighbors(cn))<=0:#
+            continue#
+        elif len(s_graph.neighbors(cn)) == 1:#
+            aa_n += 100.0#for log 1
         else:
             aa_n = aa_n + 1.0/math.log(len(s_graph.neighbors(cn)))
     
@@ -91,5 +91,7 @@ def place_feature(p_graph,n1,n2):
     else:
         w_overlap_p = np.dot(c1,c2)/seDot
     
-    return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p
+    pp = len(n1_place)*len(n2_place)
+    
+    return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp
         
