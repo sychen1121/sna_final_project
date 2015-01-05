@@ -3,7 +3,7 @@ import networkx as nx
 import datetime
 import json
 from time import time
-
+import multiprocessing as mp
 
 # ================ shared functions ====================
 
@@ -163,7 +163,8 @@ def write_top_k_cosine_matrix(file_path, file_name, top_k, top_k_cos_file_name):
 		cos_list = sorted(cos_dict.items(), key=lambda d:d[1], reverse = True)[1:end]
 		top_k_cos_dict = dict()
 		for t in cos_list:
-			top_k_cos_dict[t[0]] = t[1]
+			if t[1]!=0.0:
+				top_k_cos_dict[t[0]] = t[1]
 		top_k_matrix_dict[item] = top_k_cos_dict
 	write_vectors2json(top_k_matrix_dict, file_path, top_k_cos_file_name)
 
@@ -208,7 +209,7 @@ def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output
 
 def cf_user(top_k=10, output_path='../output/poi_recommendation'):
 	predict_dict = dict()
-	user_near_places = read_vectors2json(output_path, '')
+	user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
 	user_list = user_near_places.keys()
 	# read top_k file 
 	cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
@@ -221,12 +222,18 @@ def cf_user(top_k=10, output_path='../output/poi_recommendation'):
 	# start to cal unknown places
 	for user in user_list:
 		candi_list = user_near_places[user]
+		candi_set = set(candi_list)
 		avg = user_avg_dict[user]
-		for place in candi_list:
-			place_score = avg
-			for sim_user, cos in cos_matrix_dict[user].items():
-				place_score = place_score+cos*user_vectors_dict[user][place] 
-			user_vectors_dict[place] = place_score
+		for sim_user, cos in cos_matrix_dict[user].items():
+			friend_avg = user_avg_dict[sim_user]
+			for place, place_score in user_vectors_dict[sim_user]:
+				if place in candi_set:
+					user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
+		# for place in candi_list:
+		# 	place_score = avg
+		# 	for sim_user, cos in cos_matrix_dict[user].items():
+		# 		place_score = place_score+cos*(user_vectors_dict[user][place]-
+		# 	user_vectors_dict[place] = place_score
 	write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
 	for user in user_list:
 		predict_list = list()
@@ -234,6 +241,71 @@ def cf_user(top_k=10, output_path='../output/poi_recommendation'):
 			predict_list.append(choice(place_item))
 		predict_dict[user] = predict_list
 	return predict_dict
+
+# =============== cf multiprocess ==================
+
+def cf_user_mp(top_k=10, output_path='../output/poi_recommendation', nprocs = 10):
+	s= time()
+	predict_dict = dict()
+	users_unvisited_place_score = dict()
+	user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+	user_list = user_near_places.keys()
+	# read top_k file 
+	cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
+	user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+	# cal user avg score
+	user_avg_dict = dict()
+	for user, place_dict in user_vectors_dict.items():
+		avg = sum(place_dict.values())/float(len(place_dict))
+		user_avg_dict[user] = avg
+	# start to cal unknown places
+	num_user = len(user_list)
+	out_q = mp.Queue()
+	chunk_size = int(math.ceil(num_user/nprocs))
+	procs = list()
+	for i in range(nprocs):
+		if i == nprocs-1:
+			users = user_list[i*chunk_size:]
+		else:
+			users = user_list[i*chunk_size:(i+1)*chuck_size]
+		p = mp.Process(target=worker, args=(user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q))
+		p.start()
+		procs.append(p)
+	for i in range(nprocs):
+		users_unvisited_place_score.update(out_q.get())
+	for p in procs:
+		p.join()
+	e= time()
+	print('time of cf', e-s)
+	write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
+	for user in user_list:
+		user_vectors_dict[user].update(users_unvisited_place_score)
+	write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
+	for user in user_list:
+		predict_list = list()
+		for i in range(0,3):
+			predict_list.append(choice(place_item))
+		predict_dict[user] = predict_list
+	return predict_dict
+
+def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q):
+	users_unvisited_place_score = dict()
+	for user in users:
+		print(user)
+		unvisited_place_score = dict()
+		candi_list = user_near_places[user]
+		candi_set = set(candi_list)
+		avg = user_avg_dict[user]
+		for sim_user, cos in cos_matrix_dict[user].items():
+			friend_avg = user_avg_dict[sim_user]
+			for place, place_score in user_vectors_dict[sim_user]:
+				if place in candi_set:
+					unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
+					# user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
+		users_unvisited_place_score[user] = unvisited_place_score
+	out_q.put(users_unvisited_place_score)
+
+
 
 # recommend place to the user by cf item-based model
 def cf_item(top_k=10, output_path='../output/poi_recommendation'):
