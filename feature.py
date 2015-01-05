@@ -103,8 +103,11 @@ def place_feature(p_graph,n1,n2):
     l2 = (p_graph.node[m2]['lat'],p_graph.node[m2]['lng'])
     
     geodist = geo_dist(l1,l2)
+    w_geodist = geodist/((p_graph.edge[n1][m1]['num_checkin'])*(p_graph.edge[n2][m2]['num_checkin']))
     
-    w_geodist = geodist/ (p_graph.edge[n1][m1]['num_checkin'])*(p_graph.edge[n2][m2]['num_checkin'])
-    
+    if l1[0]==0.0 or l2[0] == 0.0:
+        geodist = ""
+        w_geodist = ""
+
     return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist
         
