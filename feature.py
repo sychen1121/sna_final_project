@@ -43,7 +43,7 @@ def place_feature(p_graph,n1,n2):
         overlap_p= len(common_p)*1.0/((pNum1+pNum2)-len(common_p))
     
     aa_ent = 0
-    min_ent = 0.0
+    min_ent = 5.0
     aa_p =0
     min_p = 0.0
     
