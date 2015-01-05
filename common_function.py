@@ -20,11 +20,6 @@ def create_social_graph(file_path):
         user = int(entry[0])
         h = entry[2]
         fc = int(entry[4])
-#        substring = line.strip().split('hometown', maxsplit=1)
-#        user = int(substring[0].strip())
-#        part = (substring[1].split('follower_count'))
-#        h = part[0].strip()
-#        fc = part[1].strip()
         social_graph.add_node(user, hometown=h, follower_count=fc)
     e = time()
     print('time for social_graph', e-s)
@@ -76,11 +71,26 @@ def create_checkin_info(file_path):
     update_place_entropy(checkin_info)
     e = time()
     print("time of entropy", e-s)
+
+    s = time()
+    update_user_hometown(checkin_info)
+    e = time()
+    print("time of update_user_hometown",e-s)
 #    print(checkin_info.node[378468])
 #    print(checkin_info.node['p378468'])
 #    print(checkin_info.node['p6616040'])
 
     return checkin_info
+def update_user_hometown(checkin_info):
+    """add a user's hometown to a node's attribute in checkin_info"""
+    for u in checkin_info.nodes():
+        if checkin_info.node[u]['type'] == 'user':
+            checkin_places = checkin_info.neighbors(u)
+            checkin_num_list = list()
+            for p in checkin_places:
+                checkin_num_list.append((p, checkin_info.edge[u][p]['num_checkin']))
+            h_id, checkin = max(checkin_num_list, key=lambda x: x[1])
+            checkin_info.add_node(u, hometown=h_id)
 
 def update_place_info(file_path, checkin_info):
     """update the basic information of a place to the graph"""
