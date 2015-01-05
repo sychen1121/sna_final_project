@@ -19,7 +19,7 @@ def create_social_graph(file_path):
         entry = line.strip().split('\t')
         user = int(entry[0])
         h = entry[2]
-        fc = int(entr[4])
+        fc = int(entry[4])
 #        substring = line.strip().split('hometown', maxsplit=1)
 #        user = int(substring[0].strip())
 #        part = (substring[1].split('follower_count'))
@@ -44,7 +44,8 @@ def create_checkin_info(file_path):
         for checkin in entry[1:]:
             place = (int(checkin.split(':')[3]))
             date_string = checkin.split('Z')[0]
-            checkin_time = dt.datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
+#            checkin_time = dt.datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
+            checkin_time = date_string
             placeID='p'+str(place)
             if checkin_info.has_edge(user, placeID):
                 num = checkin_info.edge[user][placeID]['num_checkin']
