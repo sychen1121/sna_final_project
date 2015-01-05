@@ -1,6 +1,9 @@
 import math
 import numpy as np
 
+def geo_dist(l1,l2):
+    return math.sqrt((l2[1]-l1[1])**2 + (l2[0]-l1[0])**2)
+
 def social_feature(s_graph,n1,n2):
 
     n1_neightbor = s_graph.neighbors(n1)
@@ -17,10 +20,10 @@ def social_feature(s_graph,n1,n2):
         
     aa_n =0
     for cn in common_n:
-        if len(s_graph.neighbors(cn))<=0:
-            continue
-        elif len(s_graph.neighbors(cn)) == 1:
-            aa_n += 100.0
+        if len(s_graph.neighbors(cn))<=0:#
+            continue#
+        elif len(s_graph.neighbors(cn)) == 1:#
+            aa_n += 100.0#for log 1
         else:
             aa_n = aa_n + 1.0/math.log(len(s_graph.neighbors(cn)))
     
@@ -43,7 +46,7 @@ def place_feature(p_graph,n1,n2):
         overlap_p= len(common_p)*1.0/((pNum1+pNum2)-len(common_p))
     
     aa_ent = 0
-    min_ent = 0.0
+    min_ent = 5.0
     aa_p =0
     min_p = 0.0
     
@@ -91,5 +94,17 @@ def place_feature(p_graph,n1,n2):
     else:
         w_overlap_p = np.dot(c1,c2)/seDot
     
-    return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p
+    pp = len(n1_place)*len(n2_place)
+    
+    
+    m1 = p_graph.node[n1]['hometown']
+    m2 = p_graph.node[n2]['hometown']
+    l1 = (p_graph.node[m1]['lat'],p_graph.node[m1]['lng'])
+    l2 = (p_graph.node[m2]['lat'],p_graph.node[m2]['lng'])
+    
+    geodist = geo_dist(l1,l2)
+    
+    w_geodist = geodist/ (p_graph.edge[n1][m1]['num_checkin'])*(p_graph.edge[n2][m2]['num_checkin'])
+    
+    return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist
         
