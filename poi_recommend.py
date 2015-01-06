@@ -245,7 +245,7 @@ def cf_user(top_k=10, output_path='../output/poi_recommendation'):
 
 # =============== cf multiprocess ==================
 
-def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 16):
+def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 10):
     s= time()
     predict_dict = dict()
     users_unvisited_place_score = dict()
