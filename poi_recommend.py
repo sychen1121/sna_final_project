@@ -309,8 +309,9 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
 def revise_cf_user(output_path='../output/poi_recommendation/'):
     user_vectors_dict = read_vectors2json(output_path, 'user_cf_user_vector.txt')
     user_list = user_vectors_dict.keys()
-    for user, places in user_vectors_dict.items():
-        for place in places.items():
+    for user in user_list:
+        place_item = user_vectors_dict[user].items()
+        for place in place_item:
             user_vectors_dict[user][place] = user_vectors_dict[user][place]+1
     for user in user_list:
         predict_list = list()
