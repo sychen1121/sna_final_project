@@ -268,7 +268,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         if i == nprocs-1:
             users = user_list[i*chunk_size:]
         else:
-            users = user_list[i*chunk_size:(i+1)*chunck_size]
+            users = user_list[i*chunk_size:(i+1)*chunk_size]
         p = mp.Process(target=worker, args=(user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q))
         p.start()
         procs.append(p)
