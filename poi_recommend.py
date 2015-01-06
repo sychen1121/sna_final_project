@@ -284,6 +284,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
     for user in user_list:
         predict_list = list()
+        place_item = user_vectors_dict[user].items()
         for i in range(0,3):
             predict_list.append(choice(place_item))
         predict_dict[user] = predict_list
