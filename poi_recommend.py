@@ -280,7 +280,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     print('time of cf', e-s)
     write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
     for user in user_list:
-        user_vectors_dict[user].update(users_unvisited_place_score)
+        user_vectors_dict[user].update(users_unvisited_place_score[user])
     write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
     for user in user_list:
         predict_list = list()
@@ -307,12 +307,17 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
     out_q.put(users_unvisited_place_score)
 
 def revise_cf_user(output_path='../output/poi_recommendation/'):
-    user_vectors_dict = read_vectors2json(output_path, 'user_cf_user_vector.txt')
+    user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+    users_unvisited_place_score = read_vectors2json(output_path, 'user_unvisited_place_score.txt')
+    # user_vectors_dict = read_vectors2json(output_path, 'user_cf_user_vector.txt')
     user_list = user_vectors_dict.keys()
+    for user in user_list:
+        user_vectors_dict[user].update(users_unvisited_place_score[user])
     for user in user_list:
         place_list = user_vectors_dict[user].keys()
         for place in place_list:
-            user_vectors_dict[user][place] = user_vectors_dict[user][place]+1
+            print(user_vectors_dict[user][place])
+            user_vectors_dict[user][place] = float(user_vectors_dict[user][place])+1
     for user in user_list:
         predict_list = list()
         place_item = user_vectors_dict[user].items()
