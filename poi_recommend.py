@@ -316,7 +316,7 @@ def revise_cf_user(output_path='../output/poi_recommendation/'):
     for user in user_list:
         place_list = user_vectors_dict[user].keys()
         for place in place_list:
-            print(user_vectors_dict[user][place])
+            # print(user_vectors_dict[user][place])
             user_vectors_dict[user][place] = float(user_vectors_dict[user][place])+1
     for user in user_list:
         predict_list = list()
