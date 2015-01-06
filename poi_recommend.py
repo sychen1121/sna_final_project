@@ -292,7 +292,6 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
 def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q):
     users_unvisited_place_score = dict()
     for user in users:
-        print(user)
         unvisited_place_score = dict()
         candi_list = user_near_places[user]
         candi_set = set(candi_list)
@@ -304,7 +303,6 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
                     unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
                     # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
         users_unvisited_place_score[user] = unvisited_place_score
-        break
     out_q.put(users_unvisited_place_score)
 
 
