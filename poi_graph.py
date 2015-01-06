@@ -226,6 +226,7 @@ def spot_candidate2(social_graph, poi_graph, user_list, place_list, nprocs=8, ou
                 if dp_lat<f_lat and dp_lng<f_lng:
                     near_spots.append(public_spot)
             user_near_places[user] = near_spots
+#            print(user, len(near_spots))
         out_q.put(user_near_places)
     # master part
     s=time()
@@ -246,7 +247,14 @@ def spot_candidate2(social_graph, poi_graph, user_list, place_list, nprocs=8, ou
         user_near_places.update(out_q.get())
     for p in procs:
         p.join()
-    write_vectors2json(user_near_places, output_path, 'user_near_placas.txt')
+    # write to a file
+    out_file = open(output_path+'user_candidate_places_num.txt', 'w')
+    for user,candidates in user_near_places.items():
+        print(user, len(candidates), end=' ', file=out_file)
+#        for place in candidates:
+#            print(place, end=' ', file=out_file)
+#        print('', file=out_file)
+#    write_vectors2json(user_near_places, output_path, 'user_near_places.txt')
     e=time()
     print('time of find spot candidates of unvisited_spots', e-s)
     return user_near_places
