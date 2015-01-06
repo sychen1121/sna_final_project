@@ -299,7 +299,7 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
         avg = user_avg_dict[user]
         for sim_user, cos in cos_matrix_dict[user].items():
             friend_avg = user_avg_dict[sim_user]
-            for place, place_score in user_vectors_dict[sim_user]:
+            for place, place_score in user_vectors_dict[sim_user].items():
                 if place in candi_set:
                     unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
                     # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
