@@ -307,6 +307,7 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
     out_q.put(users_unvisited_place_score)
 
 def revise_cf_user(output_path='../output/poi_recommendation/'):
+    predict_dict = dict()
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
     users_unvisited_place_score = read_vectors2json(output_path, 'user_unvisited_place_score.txt')
     # user_vectors_dict = read_vectors2json(output_path, 'user_cf_user_vector.txt')
@@ -316,7 +317,7 @@ def revise_cf_user(output_path='../output/poi_recommendation/'):
     for user in user_list:
         place_list = user_vectors_dict[user].keys()
         for place in place_list:
-            print(user_vectors_dict[user][place])
+            # print(user_vectors_dict[user][place])
             user_vectors_dict[user][place] = float(user_vectors_dict[user][place])+1
     for user in user_list:
         predict_list = list()
