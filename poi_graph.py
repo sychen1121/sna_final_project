@@ -249,11 +249,13 @@ def spot_candidate2(social_graph, poi_graph, user_list, place_list, nprocs=8, ou
         p.join()
     # write to a file
     out_file = open(output_path+'user_candidate_places_num.txt', 'w')
+    out_file2= open(output_path+'user_candidate_places_list.txt', 'w')
     for user,candidates in user_near_places.items():
-        print(user, len(candidates), end=' ', file=out_file)
-#        for place in candidates:
-#            print(place, end=' ', file=out_file)
-#        print('', file=out_file)
+        print(user, len(candidates), file=out_file)
+        print(user, end=' ', file=out_file2)
+        for place in candidates:
+            print(place, end=' ', file=out_file2)
+        print('', file=out_file2)
 #    write_vectors2json(user_near_places, output_path, 'user_near_places.txt')
     e=time()
     print('time of find spot candidates of unvisited_spots', e-s)
