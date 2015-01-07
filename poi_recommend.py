@@ -509,14 +509,17 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
         candi_list = user_vectors_dict[user].keys()
         candi_set = set(candi_list)
         avg = user_avg_dict[user]
-        for sim_user, cos in cos_matrix_dict[user].items():
-            friend_avg = user_avg_dict[sim_user]
-            for place, place_score in user_vectors_dict[sim_user].items():
-                # if place in candi_set:
-                if place not in candi_list:
-                    unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
-                    # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
-        users_unvisited_place_score[user] = unvisited_place_score
+        try:
+            for sim_user, cos in cos_matrix_dict[user].items():
+                friend_avg = user_avg_dict[sim_user]
+                for place, place_score in user_vectors_dict[sim_user].items():
+                    # if place in candi_set:
+                    if place not in candi_list:
+                        unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
+                        # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
+            users_unvisited_place_score[user] = unvisited_place_score
+        except:
+            users_unvisited_place_score[user] = dict()
     print(len(users_unvisited_place_score))
     out_q.put(users_unvisited_place_score)
 
