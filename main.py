@@ -102,14 +102,16 @@ if __name__ == '__main__':
             print(place, lat, lng, total_checkin, file=checkin_spot_stat)
         for user in user_list:
             checkin_spots = poi_graph.neighbors(user)
-            print(user, len(checkin_spots), file=user_stat)
+            user_total_checkin = 0
             for spot in checkin_spots:
                 num_checkin = poi_graph.edge[user][spot]['num_checkin']
+                user_total_checkin += num_checkin
                 time_list = poi_graph.edge[user][spot]['checkin_time_list']
                 print(user, spot, num_checkin, end=' ', file=processing_train)
                 for t in time_list:
-                    print(t.strftime("%Y-%m-%dT%H:%M:%SZ"), end=' ', file=processing_train) 
+                    print(t, end=' ', file=processing_train) 
                 print('', file=processing_train)
+            print(user, len(checkin_spots), user_total_checkin, file=user_stat)
         e = time()
         print('time of processing train', e-s)
     elif command == 'hometown_test':
