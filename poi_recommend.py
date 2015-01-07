@@ -81,6 +81,19 @@ def write_vectors2json(output_dict, file_path, file_name):
     with open(file_path+file_name, 'w') as fo:
         fo.write(jsonString)
 
+def read_user_places2json(file_path, file_name):
+    result_dict = dict()
+    with open(file_path+file_name, 'r') as fi:
+        for line in fi:
+            tmpList = line.strip().split()
+            user = tmpList[0]
+            places = tmpList[1:]
+            result_dict[user] = places
+    return result_dict
+# def write_user_places2line(output_dict, file_path, file_name):
+#     with open(file_path+file_name, 'r') as fo:
+#         for item in output_dict.keys()
+
 # =============== cf fucntions ==================
 
 # ====vectors of places and users
@@ -250,10 +263,11 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     predict_dict = dict()
     users_unvisited_place_score = dict()
     user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
-    user_list = list(user_near_places.keys())
+    # user_near_places = dict()    
     # read top_k file 
     cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+    user_list = list(user_vectors_dict.keys())
     # cal user avg score
     user_avg_dict = dict()
     for user, place_dict in user_vectors_dict.items():
@@ -278,6 +292,13 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         p.join()
     e= time()
     print('time of cf', e-s)
+    print('over final user_place size'+str(len(users_unvisited_place_score)))
+    # revise the place with score 0
+    for user in user_list:
+        place_list = users_unvisited_place_score[user].keys()
+        for place in place_list:
+            if users_unvisited_place_score[user][place]<0:
+                users_unvisited_place_score[user][place] = 0
     write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
     for user in user_list:
         user_vectors_dict[user].update(users_unvisited_place_score[user])
@@ -294,16 +315,19 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
     users_unvisited_place_score = dict()
     for user in users:
         unvisited_place_score = dict()
-        candi_list = user_near_places[user]
+        # candi_list = user_near_places[user]
+        candi_list = user_vectors_dict[user].keys()
         candi_set = set(candi_list)
         avg = user_avg_dict[user]
         for sim_user, cos in cos_matrix_dict[user].items():
             friend_avg = user_avg_dict[sim_user]
             for place, place_score in user_vectors_dict[sim_user].items():
-                if place in candi_set:
+                # if place in candi_set:
+                if place not in candi_list:
                     unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
                     # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
         users_unvisited_place_score[user] = unvisited_place_score
+    print(len(users_unvisited_place_score))
     out_q.put(users_unvisited_place_score)
 
 def revise_cf_user(output_path='../output/poi_recommendation/'):
@@ -316,7 +340,7 @@ def revise_cf_user(output_path='../output/poi_recommendation/'):
         user_vectors_dict[user].update(users_unvisited_place_score[user])
     for user in user_list:
         place_list = user_vectors_dict[user].keys()
-        min_score = abs(min(user_vectors_dict[user].values()))
+        # min_score = abs(min(user_vectors_dict[user].values()))
         for place in place_list:
             # print(user_vectors_dict[user][place])
             user_vectors_dict[user][place] = float(user_vectors_dict[user][place])+min_score
