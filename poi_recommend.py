@@ -215,6 +215,30 @@ def write_users_cosine(output_path, top_k, social_graph):
     write_cosine_matrix(user_vectors_dict, user_candidates_dict, output_path, 'user_cosine_matrix.txt')
     write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
 
+def write_places_cosine(output_path, input_path, top_k):
+    place_vectors_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
+    place_candidates_dict = dict()
+    place_list = place_vectors_dict.keys()
+    # read place cat to find candidates list
+    place_cate = dict()
+    cate_places = dict()
+    with open(input_path+'Poi_spot_cluster.csv', 'r') as fi:
+        for line in fi:
+            tmp =line.strip().split(',')
+            place = tmp[0]
+            cluster = tmp[-1]
+            place_cate[place] = cluster
+            try: 
+                cate_places[cluster].append(place)
+            except:
+                cate_places[cluster] = list()
+                cate_places[cluster].append(place)
+    for place in place_list:
+        place_candidates_dict[place] = cate_places[place_cate[place]]
+    write_cosine_matrix(place_vectors_dict, place_candidates_dict, output_path, 'place_cosine_matrix.txt')
+    write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
+
+
 
 # calculate and write cosine matrix
 def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name):
@@ -273,12 +297,12 @@ def cal_cosine(dict1, dict2):
 def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output/poi_recommendation/',top_k=10):
     # # load social and poi graph
     # poi_graph, user_list, place_list = poi.create_poi_graph(input_path)
-    poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
+    # poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
     # social_graph = poi.create_social_graph(input_path)
     # poi.update_user_hometown(social_graph, poi_graph)
 
     # # write vectors of users or places
-    write_vector_matrix(user_list, place_list, poi_graph)
+    # write_vector_matrix(user_list, place_list, poi_graph)
 
     
     # # cal user cosine matrix by social graph
@@ -291,6 +315,7 @@ def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output
     # write_cosine_matrix(place_vector_dict, output_path, 'place_cosine_matrix.txt')
     # write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
 
+    write_places_cosine(output_path, input_path, top_k)
 
 
 # ============= recommend methods ===============
@@ -401,7 +426,19 @@ def cf_user_mp_with_distance(top_k=10, output_path='../output/poi_recommendation
         predict_dict[user] = predict_list
     return predict_dict
 
-
+# recommend place to the user by cf item-based model
+def cf_item_mp(top_k=10, output_path='../output/poi_recommendation'):
+    predict_dict = dict()
+    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+    user_list = user_near_places.keys()
+    # need to be add
+    for user in user_list:
+        predict_list = list()
+        for i in range(0,3):
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+    return predict_dict
 
 def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 10):
     s= time()
@@ -499,19 +536,7 @@ def revise_cf_user(output_path='../output/poi_recommendation/'):
 
 
 
-# recommend place to the user by cf item-based model
-def cf_item(top_k=10, output_path='../output/poi_recommendation'):
-    predict_dict = dict()
-    user_near_places = read_vectors2json(output_path, '')
-    user_list = user_near_places.keys()
-    # need to be add
-    for user in user_list:
-        predict_list = list()
-        for i in range(0,3):
-            predict_list.append(choice(place_item))
-        predict_dict[user] = predict_list
-    return predict_dict
-    return predict_dict
+
 
 
 
@@ -675,4 +700,4 @@ def time_series_most_visited_one_method(output_path='../output/poi_recommendatio
 
 # run_method(cf_user)
 
-# cf_preprocess()
+cf_preprocess()
