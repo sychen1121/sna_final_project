@@ -55,6 +55,6 @@ def get_answer_ratio(output_file, output_path='../output/poi_recommendation/', t
 	with open(output_path+'statistic.txt', 'a') as fo:
 		fo.write('The Ratio of Candidate Places in new places: '+ str(ratio))
 
-get_answer_ratio('')
+get_answer_ratio('user_candidate_places_list.txt')
 
 
