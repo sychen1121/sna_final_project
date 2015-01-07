@@ -161,7 +161,7 @@ def norm_vector_with_time_weight(origin_list, graph):
         items_norm_dict[item] = norm_dict
     return items_norm_dict
 
-def norm_vector_with_time_distribution(origin_list, graph):
+# def norm_vector_with_time_distribution(origin_list, graph):
 
 
 # ======= cal cosines
