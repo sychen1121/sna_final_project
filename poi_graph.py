@@ -51,7 +51,8 @@ def create_poi_graph_from_file(file_path):
     for line in user_stat:
        user = line.strip().split()[0]
        total_checkin_spot = int(line.strip().split()[1])
-       tmp_list.append((user, {'type':'user','total_checkin_spot': total_checkin_spot}))
+       total_checkin = int(line.strip().split()[2])
+       tmp_list.append((user, {'type':'user','total_checkin_spot': total_checkin_spot, 'total_checkin': total_checkin}))
        user_list.append(user)
     poi_graph.add_nodes_from(tmp_list)
     # create place list and add place info into poi_graph

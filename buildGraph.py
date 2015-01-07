@@ -1,4 +1,5 @@
 import networkx as nx
+import time
 
 def build_graph():
     input_dir = "data/"
@@ -10,13 +11,14 @@ def build_graph():
     for l in fr.readlines():
         l = l.strip('\n')
         l = l.split('\t')
+        
         graph.add_node(l[0],follower_count=l[4])
-        tmp = l[2].split(',')
+        tmp = l[2]
         graph.node[l[0]]['hometown'] = list()
         
-        for item in tmp:
-            item = item.lower()
-            graph.node[l[0]]['hometown'].append(item.strip(' \"\'#*&%@$+-'))
+        
+        item = tmp.lower()
+        graph.node[l[0]]['hometown'].append(item.strip(' \"\'#*&%@$+-'))
         
         
         for spot in graph.node[l[0]]['hometown']:
