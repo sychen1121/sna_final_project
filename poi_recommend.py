@@ -390,6 +390,8 @@ def cf_user_mp_with_distance(top_k=10, output_path='../output/poi_recommendation
             place_lat = poi_graph.node[place]['lat']
             place_lng = poi_graph.node[place]['lng']
             distance = ((user_hometown_lat-place_lat)**2+(user_hometown_lng-place_lng)**2)**0.5*1000
+            if distance ==0:
+                distance=1
             user_vectors_dict[user][place] = user_vectors_dict[user][place]/float(distance)
     for user in user_list:
         predict_list = list()
