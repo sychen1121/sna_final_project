@@ -117,4 +117,8 @@ if __name__ == '__main__':
     elif command == 'hometown_test':
         checkin_graph = cf.create_checkin_info(input_path)
         social_graph, not_friend_list = cf.create_social_graph(input_path)
+    elif command == 'poi_stat':
+        poi_graph, user_list, place_list = poi.create_poi_graph_from_file(file_path)
+        spot_geocode = open(input_path+'spot_geocode.csv', 'w')
+
     print("end of execution")
