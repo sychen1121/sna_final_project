@@ -59,7 +59,7 @@ def create_poi_graph_from_file(file_path):
     checkin_spot_stat = open(file_path+'checkin_spot_stat.txt', 'r')
     tmp_list = list()
     for line in checkin_spot_stat:
-        entry = line.strip().split()
+        entry = line.strip().split(',')
         placeID = entry[0]
         lat = float(entry[1])
         lng = float(entry[2])

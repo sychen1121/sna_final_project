@@ -1,5 +1,6 @@
 import common_function as cf
 import poi_graph as poi
+import poi_recommend as poi_r
 import feature as ft
 import multiprocessing as mp
 import math
@@ -118,7 +119,19 @@ if __name__ == '__main__':
         checkin_graph = cf.create_checkin_info(input_path)
         social_graph, not_friend_list = cf.create_social_graph(input_path)
     elif command == 'poi_stat':
-        poi_graph, user_list, place_list = poi.create_poi_graph_from_file(file_path)
-        spot_geocode = open(input_path+'spot_geocode.csv', 'w')
+        poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
+        s=time()
+        possible_user_dict = poi_r.get_possible_user_from_spots(poi_graph, user_list)
+        possible_user = open(input_path+'possible_user.txt', 'w')
+        for u,p in possible_user_dict.items():
+            print(u,len(p),file=possible_user)
+        e=time()
+        print('time of possible_user', e-s)
+    elif command == 'poi_cos':
+        poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
+        s=time()
+        poi_r.write_user_cosine_spots(output_path, poi_graph, user_list, 10, 8)
+        e=time()
+        print('time of user_cosine', e-s)
 
     print("end of execution")

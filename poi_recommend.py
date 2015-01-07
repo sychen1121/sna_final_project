@@ -122,6 +122,27 @@ def norm_vector_by_graph(origin_list, graph):
         items_norm_dict[item] = norm_dict
     return items_norm_dict
 
+# ======= get possible users who has the same checkin place
+def get_possible_user_from_spots(poi_graph, user_list):
+    """filtering user list to get possilbe users who have the same checkin places"""
+    user_candidates_dict = dict()
+    for user in user_list:
+        checkin_places = poi_graph.neighbors(user)
+        possible_user = list()
+        for place in checkin_places:
+            u = poi_graph.neighbors(place)
+            u.remove(user)
+            possible_user += u
+        user_candidates_dict[user] = list(set(possible_user))
+    return user_candidates_dict
+
+def write_user_cosine_spots(output_path, poi_graph, user_list, top_k, nprocs):
+    user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+    user_candidates_dict = get_possible_user_from_spots(poi_graph, user_list)
+    write_cosine_matrix(user_vectors_dict, user_candidates_dict, output_path, 'user_cosine_matrix_spots.txt', nprocs)
+    write_top_k_cosine_matrix(output_path, 'user_cosine_matrix_spots.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix_spots.txt')
+        
+    
 # ======= cal cosines
 def write_users_cosine(output_path, top_k, social_graph):
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
@@ -144,26 +165,43 @@ def write_users_cosine(output_path, top_k, social_graph):
 
 
 # calculate and write cosine matrix
-def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name):
+def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name, nprocs=8):
+    def worker(vectors_dict, candidates_dict, users, out_q):
+        cos_matrix_dict = dict()
+        for user in users:
+            candidate_list = candidates_dict[user]
+            for candidate in candidate_list:
+                cos = cal_cosine(vectors_dict[user], vectors_dict[candidate])
+                try: 
+                    cos_matrix_dict[user][candidate] = cos
+                except:
+                    cos_matrix_dict[user] = dict()
+                    cos_matrix_dict[user][candidate] = cos
+        out_q.put(cos_matrix_dict)
+    # master part
     print('start computing cosine matrix')
-    cos_matrix_dict = dict()
-    item_list = sorted(candidates_dict.keys())
-    # for every item, calculating cosine similarity
+    user_list = sorted(list()candidates_dict.keys())
+    num_user = len(user_list)
+    out_q = mp.Queue()
+    chunk_size = int(math.ceil(num_user/nprocs))
+    procs = []
+    for i  in range(nprocs):
+        if i == nprocs - 1:
+            users = user_list[i*chunk_size:]
+        else:
+            users = user_list[i*chunk_size:(i+1)*chunk_size]
+        p = mp.Process(target=worker, args=(vectors_dict, candidates_dict, users, out_q))
+        procs.append(p)
+        p.start()
+    cos_matrix = dict()
+    for i in range(nprocs):
+        cos_matrix.update(out_q.get())
+    for p in procs:
+        p.join()
+    write_vectors2json(cos_matrix, output_path, cos_file_name)
+    e=time()
+    print('time of write_cosine_matrixs', e-s)
 
-    for item in item_list:
-        s = time()
-        print(item)
-        candidate_list = candidates_dict[item]
-        for candidate in candidate_list:
-            cos = cal_cosine(vectors_dict[item], vectors_dict[candidate])
-            try: 
-                cos_matrix_dict[item][candidate] = cos
-            except:
-                cos_matrix_dict[item] = dict()
-                cos_matrix_dict[item][candidate] = cos
-        e= time()
-        print(e-s)
-    write_vectors2json(cos_matrix_dict, output_path, cos_file_name)
 
     
 # write top k cosine matrix to the file
