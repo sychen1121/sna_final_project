@@ -90,6 +90,9 @@ def read_user_places2json(file_path, file_name):
             places = tmpList[1:]
             result_dict[user] = places
     return result_dict
+# def write_user_places2line(output_dict, file_path, file_name):
+#     with open(file_path+file_name, 'r') as fo:
+#         for item in output_dict.keys()
 
 # =============== cf fucntions ==================
 
@@ -259,8 +262,8 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     s= time()
     predict_dict = dict()
     users_unvisited_place_score = dict()
-    # user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
-    user_near_places = dict()    
+    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+    # user_near_places = dict()    
     # read top_k file 
     cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
