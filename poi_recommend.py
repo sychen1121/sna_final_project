@@ -104,8 +104,12 @@ def write_vector_matrix(user_list, place_list, poi_graph):
     # place_norm_dict = norm_vector_by_graph(place_list, poi_graph)
     # write_vectors2json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
     # write_vectors2json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
-    user_time_weight_norm_dict = norm_vector_with_time_weight(user_list, poi_graph)
-    write_vectors2json(user_time_weight_norm_dict, '../output/poi_recommendation/', 'user_time_weight_norm_vector.txt')
+    # user_time_weight_norm_dict = norm_vector_with_time_weight(user_list, poi_graph)
+    # write_vectors2json(user_time_weight_norm_dict, '../output/poi_recommendation/', 'user_time_weight_norm_vector.txt')
+
+    user_time_distribution_dict = norm_vector_in_time_distribution(user_list, poi_graph)
+    write_vectors2json(user_time_distribution_dict, '../output/poi_recommendation/', 'user_vector_in_time_distribution.txt')
+
 
 def norm_vector_by_graph(origin_list, graph):
     items_norm_dict = dict()
@@ -167,24 +171,27 @@ def norm_vector_in_time_distribution(origin_list, graph):
     for item in origin_list:
         normValue = float()
         norm_dict = dict()
-        latest_time = dt.datetime.strptime(user_last_checkin_time[item], "%Y-%m-%dT%H:%M:%SZ")
+        time_series = list()
+        # 3~9 9~15 15~21 21~3
         # get vector
+        for i in range(4):
+            time_series.append(dict())
         for n in graph.neighbors(item):
             times = graph.edge[item][n]['checkin_time_list']
-            # divide to 
-            b_time_range = int()
             for time in times:
-                checkin_time = dt.datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
-                time_range = int((latest_time - checkin_time).days/7)
-                if b_time_range< time_range:
-                    b_time_range = time_range
-            norm_dict[n] = graph.edge[item][n]['num_checkin']*(1/float(1+b_time_range))
-            normValue = normValue+norm_dict[n]**2
-        normValue = normValue**0.5
+                checkin_time = dt.datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ").hour
+                if checkin_time <=3:
+                    time_zone = 3
+                else:
+                    time_zone = int((checkin_time-3)/6)
+                time_series[time_zone][n] = time_series[time_zone].get(n, 0) +1
+                # no normalize 
+            # normValue = normValue+norm_dict[n]**2
+        # normValue = normValue**0.5
         # norm the vector
-        for i in norm_dict.keys():
-            norm_dict[i] = norm_dict[i]/normValue
-        items_norm_dict[item] = norm_dict
+        # for i in norm_dict.keys():
+            # norm_dict[i] = norm_dict[i]/normValue
+        items_norm_dict[item] = time_series
     return items_norm_dict    
 
 
@@ -264,7 +271,6 @@ def cal_cosine(dict1, dict2):
 
 # recommend place to the user by cf user-based model
 def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output/poi_recommendation/',top_k=10):
-    import poi_graph as poi
     # # load social and poi graph
     # poi_graph, user_list, place_list = poi.create_poi_graph(input_path)
     poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
@@ -377,6 +383,8 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         if len(place_item)>0:
             for i in range(0,3):
                 predict_list.append(choice(place_item))
+        for i in range(0,3):
+            predict_list.append('a')
         predict_dict[user] = predict_list
     return predict_dict
 
@@ -524,6 +532,73 @@ def time_weighted_most_visited_top_three_method(output_path='../output/poi_recom
         predict_dict[user] = predict_list
     return predict_dict
 
+def time_series_most_visited_one_method(output_path='../output/poi_recommendation/',input_path='../input/Gowalla_new/POI/'):
+    predict_dict = dict()
+    file_name = 'user_vector_in_time_distribution.txt'
+
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    user_list = user_norm_dict.keys()
+    answer_time_dict=dict()
+
+    with open(input_path+'Gowalla_testing.txt', 'r') as fi:
+        for line in fi:
+            tmp = line.strip().split()
+            user = tmp[0]
+            checkin_time = dt.datetime.strptime(tmp[1], "%Y-%m-%dT%H:%M:%SZ").hour
+            time_zone = int()
+            if checkin_time <=3:
+                time_zone = 3
+            else:
+                time_zone = int((checkin_time-3)/6)
+            try:
+                answer_time_dict[user].append(time_zone)
+            except:
+                answer_time_dict[user] = list()
+                answer_time_dict[user].append(time_zone)        
+    for user, time_series in user_norm_dict.items():
+        predict_list = list()
+        zones = answer_time_dict[user]
+        for zone in zones:
+            place_item = time_series[zone].items()
+            iteration = zone
+            while len(place_item)==0:
+                iteration = (iteration+1)%4
+                place_item = time_series[iteration].items()
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+    predict_dict = dict()
+    file_name = 'user_vector_in_time_distribution.txt'
+
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    user_list = user_norm_dict.keys()
+    answer_time_dict=dict()
+
+    with open(input_path+'Gowalla_testing.txt', 'r') as fi:
+        for line in fi:
+            tmp = line.strip().split()
+            user = tmp[0]
+            checkin_time = dt.datetime.strptime(tmp[1], "%Y-%m-%dT%H:%M:%SZ").hour
+            time_zone = int()
+            if checkin_time <=3:
+                time_zone = 3
+            else:
+                time_zone = int((checkin_time-3)/6)
+            try:
+                answer_time_dict[user].append(time_zone)
+            except:
+                answer_time_dict[user] = list()
+                answer_time_dict[user].append(time_zone)        
+    for user, time_series in user_norm_dict.items():
+        predict_list = list()
+        zones = answer_time_dict[user]
+        for zone in zones:
+            place_item = time_series[zone].items()
+            place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+            predict_list.append(place_rank[0][0])
+        predict_dict[user] = predict_list
+    return predict_dict
 # add time stamp in location to predict 
 
 
