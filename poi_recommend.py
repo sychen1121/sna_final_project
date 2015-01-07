@@ -447,7 +447,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
     # user_near_places = dict()    
     # read top_k file 
-    cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
+    cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix_spots.txt')
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
     user_list = list(user_vectors_dict.keys())
     # cal user avg score
@@ -481,10 +481,10 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         for place in place_list:
             if users_unvisited_place_score[user][place]<=0:
                 users_unvisited_place_score[user][place] = 0.0000001
-    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
+    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score_spots.txt')
     for user in user_list:
         user_vectors_dict[user].update(users_unvisited_place_score[user])
-    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
+    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector_spots.txt')
     for user in user_list:
         predict_list = list()
         place_item = user_vectors_dict[user].items()
