@@ -43,4 +43,18 @@ def get_answer_ratio(output_file, output_path='../output/poi_recommendation/', t
 				answers[user] = list()
 			answers[user].append(place)
 	user_list = answers.keys()
-	
+	user_places_dict = pr.read_user_places2json(output_path, output_file)
+	for user in user_list:
+		candi_places = user_places_dict[user]
+		answer_places = answers[user]
+		for place in answer_places:
+			if place in candi_places:
+				count = count+1
+	ratio = count / (3*len(user_list))
+	print(ratio)
+	with open(output_path+'statistic.txt', 'a') as fo:
+		fo.write('The Ratio of Candidate Places in new places: '+ str(ratio))
+
+get_answer_ratio('')
+
+
