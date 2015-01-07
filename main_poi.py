@@ -11,3 +11,4 @@ from sys import argv
 #user_near_places = poi.spot_candidate2(social_graph, poi_graph, user_list, place_list,nprocs)
 
 pr.run_method(pr.cf_user_mp)
+# pr.run_method(pr.time_weighted_most_visited_top_three_method)
