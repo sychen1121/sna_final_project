@@ -371,7 +371,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     for user in user_list:
         place_list = users_unvisited_place_score[user].keys()
         for place in place_list:
-            if users_unvisited_place_score[user][place]<0:
+            if users_unvisited_place_score[user][place]<=0:
                 users_unvisited_place_score[user][place] = 0.0000001
     # write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
     # for user in user_list:
