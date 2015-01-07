@@ -336,6 +336,7 @@ def cf_user_mp_with_distance(top_k=10, output_path='../output/poi_recommendation
     file_path = '../input/Gowalla_new/POI/'
     social_graph = poi.create_social_graph(file_path)
     poi_graph, user_list, place_list = poi.create_poi_graph_from_file(file_path)
+    poi.update_user_hometown(social_graph, poi_graph)
     s= time()
     predict_dict = dict()
     users_unvisited_place_score = dict()
@@ -384,8 +385,8 @@ def cf_user_mp_with_distance(top_k=10, output_path='../output/poi_recommendation
     for user in user_list:
         for place in user_vectors_dict[user].keys():
             user_hometown = social_graph.node[user]['hometown']
-            user_hometown_lat = user_hometown[0]
-            user_hometown_lng = user_hometown[1]
+            user_hometown_lat = float(user_hometown[0])
+            user_hometown_lng = float(user_hometown[1])
             place_lat = poi_graph.node[place]['lat']
             place_lng = poi_graph.node[place]['lng']
             distance = ((user_hometown_lat-place_lat)**2+(user_hometown_lng-place_lng)**2)**0.5*1000
