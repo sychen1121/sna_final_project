@@ -128,6 +128,27 @@ def norm_vector_by_graph(origin_list, graph):
         items_norm_dict[item] = norm_dict
     return items_norm_dict
 
+# ======= get possible users who has the same checkin place
+def get_possible_user_from_spots(poi_graph, user_list):
+    """filtering user list to get possilbe users who have the same checkin places"""
+    user_candidates_dict = dict()
+    for user in user_list:
+        checkin_places = poi_graph.neighbors(user)
+        possible_user = list()
+        for place in checkin_places:
+            u = poi_graph.neighbors(place)
+            u.remove(user)
+            possible_user += u
+        user_candidates_dict[user] = list(set(possible_user))
+    return user_candidates_dict
+
+def write_user_cosine_spots(output_path, poi_graph, user_list, top_k, nprocs):
+    user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+    user_candidates_dict = get_possible_user_from_spots(poi_graph, user_list)
+    write_cosine_matrix(user_vectors_dict, user_candidates_dict, output_path, 'user_cosine_matrix_spots.txt', nprocs)
+    write_top_k_cosine_matrix(output_path, 'user_cosine_matrix_spots.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix_spots.txt')
+        
+
 def norm_vector_with_time_weight(origin_list, graph):
     # get users' latest checkin time
     user_last_checkin_time = dict()
@@ -194,7 +215,6 @@ def norm_vector_in_time_distribution(origin_list, graph):
         items_norm_dict[item] = time_series
     return items_norm_dict    
 
-
 # ======= cal cosines
 def write_users_cosine(output_path, top_k, social_graph):
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
@@ -241,26 +261,43 @@ def write_places_cosine(output_path, input_path, top_k):
 
 
 # calculate and write cosine matrix
-def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name):
+def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name, nprocs=8):
+    def worker(vectors_dict, candidates_dict, users, out_q):
+        cos_matrix_dict = dict()
+        for user in users:
+            candidate_list = candidates_dict[user]
+            for candidate in candidate_list:
+                cos = cal_cosine(vectors_dict[user], vectors_dict[candidate])
+                try: 
+                    cos_matrix_dict[user][candidate] = cos
+                except:
+                    cos_matrix_dict[user] = dict()
+                    cos_matrix_dict[user][candidate] = cos
+        out_q.put(cos_matrix_dict)
+    # master part
     print('start computing cosine matrix')
-    cos_matrix_dict = dict()
-    item_list = sorted(candidates_dict.keys())
-    # for every item, calculating cosine similarity
+    user_list = sorted(candidates_dict.keys())
+    num_user = len(user_list)
+    out_q = mp.Queue()
+    chunk_size = int(math.ceil(num_user/nprocs))
+    procs = []
+    for i  in range(nprocs):
+        if i == nprocs - 1:
+            users = user_list[i*chunk_size:]
+        else:
+            users = user_list[i*chunk_size:(i+1)*chunk_size]
+        p = mp.Process(target=worker, args=(vectors_dict, candidates_dict, users, out_q))
+        procs.append(p)
+        p.start()
+    cos_matrix = dict()
+    for i in range(nprocs):
+        cos_matrix.update(out_q.get())
+    for p in procs:
+        p.join()
+    write_vectors2json(cos_matrix, output_path, cos_file_name)
+    e=time()
+    print('time of write_cosine_matrixs', e-s)
 
-    for item in item_list:
-        s = time()
-        print(item)
-        candidate_list = candidates_dict[item]
-        for candidate in candidate_list:
-            cos = cal_cosine(vectors_dict[item], vectors_dict[candidate])
-            try: 
-                cos_matrix_dict[item][candidate] = cos
-            except:
-                cos_matrix_dict[item] = dict()
-                cos_matrix_dict[item][candidate] = cos
-        e= time()
-        print(e-s)
-    write_vectors2json(cos_matrix_dict, output_path, cos_file_name)
 
     
 # write top k cosine matrix to the file
@@ -432,10 +469,18 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     s= time()
     predict_dict = dict()
     users_unvisited_place_score = dict()
-    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
-    # user_near_places = dict()    
+    user_near_places = dict()
+    place_file = open(output_path+'user_candidate_places_list.txt', 'r')
+    for line in place_file:
+        entry = line.strip().split()
+        user =entry[0]
+        candidates = list()
+        for p in entry[1:]:
+            candidates.append(p)
+        user_near_places[user]=candidates
+    #user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
     # read top_k file 
-    cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
+    cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix_spots.txt')
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
     user_list = list(user_vectors_dict.keys())
     # cal user avg score
@@ -469,10 +514,10 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         for place in place_list:
             if users_unvisited_place_score[user][place]<=0:
                 users_unvisited_place_score[user][place] = 0.0000001
-    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
+    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score_spots.txt')
     for user in user_list:
         user_vectors_dict[user].update(users_unvisited_place_score[user])
-    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
+    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector_spots_spots.txt')
     for user in user_list:
         predict_list = list()
         place_item = user_vectors_dict[user].items()
@@ -565,14 +610,17 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
         candi_list = user_vectors_dict[user].keys()
         candi_set = set(candi_list)
         avg = user_avg_dict[user]
-        for sim_user, cos in cos_matrix_dict[user].items():
-            friend_avg = user_avg_dict[sim_user]
-            for place, place_score in user_vectors_dict[sim_user].items():
-                # if place in candi_set:
-                if place not in candi_list:
-                    unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
-                    # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
-        users_unvisited_place_score[user] = unvisited_place_score
+        try:
+            for sim_user, cos in cos_matrix_dict[user].items():
+                friend_avg = user_avg_dict[sim_user]
+                for place, place_score in user_vectors_dict[sim_user].items():
+                    # if place in candi_set:
+                    if place not in candi_list:
+                        unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
+                        # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
+            users_unvisited_place_score[user] = unvisited_place_score
+        except:
+            users_unvisited_place_score[user] = dict()
     print(len(users_unvisited_place_score))
     out_q.put(users_unvisited_place_score)
 
