@@ -252,7 +252,7 @@ def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_nam
         out_q.put(cos_matrix_dict)
     # master part
     print('start computing cosine matrix')
-    user_list = sorted(list()candidates_dict.keys())
+    user_list = sorted(candidates_dict.keys())
     num_user = len(user_list)
     out_q = mp.Queue()
     chunk_size = int(math.ceil(num_user/nprocs))
