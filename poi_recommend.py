@@ -444,8 +444,16 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     s= time()
     predict_dict = dict()
     users_unvisited_place_score = dict()
-    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
-    # user_near_places = dict()    
+    user_near_places = dict()
+    place_file = open(output_path+'user_candidate_places_list.txt', 'r')
+    for line in place_file:
+        entry = line.strip().split()
+        user =entry[0]
+        candidates = list()
+        for p in entry[1:]:
+            candidates.append(p)
+        user_near_places[user]=candidates
+    #user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
     # read top_k file 
     cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix_spots.txt')
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
