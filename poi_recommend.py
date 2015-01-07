@@ -426,19 +426,7 @@ def cf_user_mp_with_distance(top_k=10, output_path='../output/poi_recommendation
         predict_dict[user] = predict_list
     return predict_dict
 
-# recommend place to the user by cf item-based model
-def cf_item_mp(top_k=10, output_path='../output/poi_recommendation'):
-    predict_dict = dict()
-    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
-    user_list = user_near_places.keys()
-    # need to be add
-    for user in user_list:
-        predict_list = list()
-        for i in range(0,3):
-            predict_list.append(choice(place_item))
-        predict_dict[user] = predict_list
-    return predict_dict
-    return predict_dict
+
 
 def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 10):
     s= time()
@@ -492,6 +480,82 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
             predict_list.append(choice(place_item))
         predict_dict[user] = predict_list
     return predict_dict
+
+# recommend place to the user by cf item-based model
+def cf_item_mp(top_k=10, output_path='../output/poi_recommendation', nprocs=10):
+    predict_dict = dict()
+    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+    user_list = user_near_places.keys()
+    cos_matrix_dict = read_vectors2json(output_path, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
+    place_vectors_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
+    place_avg_dict = dict()
+    place_list = place_vectors_dict.keys()
+
+    for place, user_dict in place_vectors_dict.items():
+        avg = sum(user_dict.values())/float(len(user_dict))
+        place_avg_dict[place] = avg
+    # start to cal unknown places
+    num_place = len(place_list)
+    out_q = mp.Queue()
+    chunk_size = int(math.ceil(num_place/nprocs))
+    procs = list()
+    for i in range(nprocs):
+        if i == nprocs-1:
+            places = place_list[i*chunk_size:]
+        else:
+            places = place_list[i*chunk_size:(i+1)*chunk_size]
+        p = mp.Process(target=worker_item, args=(places, user_near_places, place_avg_dict, cos_matrix_dict, place_vectors_dict, out_q))
+        p.start()
+        procs.append(p)
+    for i in range(nprocs):
+        users_unvisited_place_score.update(out_q.get())
+    for p in procs:
+        p.join()
+    e= time()
+    print('time of cf', e-s)
+    print('over final user_place size'+str(len(users_unvisited_place_score)))
+    # place: user: score
+    # revise the place with score 0
+    for place in place_list:
+        user_list = users_unvisited_place_score[place].keys()
+        for user in user_list:
+            if users_unvisited_place_score[place][user]<=0:
+                users_unvisited_place_score[place][user] = 0.0000001
+    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score_item_based.txt')
+    for place in place_list:
+        user_vectors_dict[place].update(users_unvisited_place_score[place])
+    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector_item_based.txt')
+    for user in user_list:
+        predict_list = list()
+        place_item = list()
+        for place in user_near_places[user]:
+            try:
+                place_item.append((place, user_vectors_dict[place][user]))
+            except:
+                pass
+        for i in range(0,3):
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+def worker_item(places, user_near_places, place_avg_dict, cos_matrix_dict, place_vectors_dict, out_q):
+    places_unvisited_place_score = dict()
+    for place in places:
+        unvisited_place_score = dict()
+        # candi_list = user_near_places[user]
+        candi_list = place_vectors_dict[place].keys()
+        candi_set = set(candi_list)
+        avg = place_avg_dict[user]
+        for sim_place, cos in cos_matrix_dict[place].items():
+            friend_avg = place_avg_dict[sim_place]
+            for user, user_score in place_vectors_dict[sim_place].items():
+                # if place in candi_set:
+                if user not in candi_list:
+                    unvisited_place_score[user] = unvisited_place_score.get(user, 0) + cos*(user_score-friend_avg)
+                    # place_vectors_dict[user][place] = place_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
+        places_unvisited_place_score[place] = unvisited_place_score
+    print(len(places_unvisited_place_score))
+    out_q.put(places_unvisited_place_score)
 
 def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q):
     users_unvisited_place_score = dict()

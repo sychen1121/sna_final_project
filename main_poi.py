@@ -10,7 +10,8 @@ from sys import argv
 # poi.update_hometown_geocode(social_graph, user_list)
 #user_near_places = poi.spot_candidate2(social_graph, poi_graph, user_list, place_list,nprocs)
 
+pr.run_method(pr.cf_item_mp)
 # pr.run_method(pr.cf_user_mp)
-pr.run_method(pr.cf_user_mp_with_distance)
+# pr.run_method(pr.cf_user_mp_with_distance)
 # pr.run_method(pr.time_weighted_most_visited_top_three_method)
 # pr.run_method(pr.time_series_most_visited_one_method)
