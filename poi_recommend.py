@@ -484,7 +484,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score_spots.txt')
     for user in user_list:
         user_vectors_dict[user].update(users_unvisited_place_score[user])
-    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector_spots.txt')
+    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector_spots_spots.txt')
     for user in user_list:
         predict_list = list()
         place_item = user_vectors_dict[user].items()
