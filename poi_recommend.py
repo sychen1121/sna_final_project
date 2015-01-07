@@ -278,6 +278,12 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         p.join()
     e= time()
     print('time of cf', e-s)
+    # revise the place with score 0
+    for user in user_list:
+        place_list = users_unvisited_place_score[user].keys()
+        for place in place_list:
+            if users_unvisited_place_score[user][place]<0:
+                users_unvisited_place_score[user][place] = 0
     write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
     for user in user_list:
         user_vectors_dict[user].update(users_unvisited_place_score[user])
@@ -316,7 +322,7 @@ def revise_cf_user(output_path='../output/poi_recommendation/'):
         user_vectors_dict[user].update(users_unvisited_place_score[user])
     for user in user_list:
         place_list = user_vectors_dict[user].keys()
-        min_score = abs(min(user_vectors_dict[user].values()))
+        # min_score = abs(min(user_vectors_dict[user].values()))
         for place in place_list:
             # print(user_vectors_dict[user][place])
             user_vectors_dict[user][place] = float(user_vectors_dict[user][place])+min_score

@@ -28,4 +28,19 @@ def get_place_visited_ratio(output_path = '../output/poi_recommendation/',testin
 
 
 
-get_place_visited_ratio()
+# get_place_visited_ratio()
+
+def get_answer_ratio(output_file, output_path='../output/poi_recommendation/', testing_path='../input/Gowalla_new/POI/'):
+	answers = dict()
+	ratio = float()
+	count = int()
+	with open(testing_path+'Gowalla_testing.txt','r') as fi:
+		for line in fi:
+			entry = line.strip().split('\t')
+			user = entry[0]
+			place = 'p'+entry[4]
+			if answers.get(user, 0) == 0:
+				answers[user] = list()
+			answers[user].append(place)
+	user_list = answers.keys()
+	
