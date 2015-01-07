@@ -290,6 +290,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         p.join()
     e= time()
     print('time of cf', e-s)
+    print('final user_place size'+str(len(users_unvisited_place_score)))
     # revise the place with score 0
     # for user in user_list:
     #     place_list = users_unvisited_place_score[user].keys()
