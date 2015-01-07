@@ -81,6 +81,16 @@ def write_vectors2json(output_dict, file_path, file_name):
     with open(file_path+file_name, 'w') as fo:
         fo.write(jsonString)
 
+def read_user_places2json(file_path, file_name):
+    result_dict = dict()
+    with open(file_path+file_name, 'r') as fi:
+        for line in fi:
+            tmpList = line.strip().split()
+            user = tmpList[0]
+            places = tmpList[1:]
+            result_dict[user] = places
+    return result_dict
+
 # =============== cf fucntions ==================
 
 # ====vectors of places and users
@@ -251,6 +261,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     users_unvisited_place_score = dict()
     user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
     user_list = list(user_near_places.keys())
+    print(len(user_list))
     # read top_k file 
     cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
@@ -279,24 +290,25 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     e= time()
     print('time of cf', e-s)
     # revise the place with score 0
-    for user in user_list:
-        place_list = users_unvisited_place_score[user].keys()
-        for place in place_list:
-            if users_unvisited_place_score[user][place]<0:
-                users_unvisited_place_score[user][place] = 0
-    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
-    for user in user_list:
-        user_vectors_dict[user].update(users_unvisited_place_score[user])
-    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
-    for user in user_list:
-        predict_list = list()
-        place_item = user_vectors_dict[user].items()
-        for i in range(0,3):
-            predict_list.append(choice(place_item))
-        predict_dict[user] = predict_list
-    return predict_dict
+    # for user in user_list:
+    #     place_list = users_unvisited_place_score[user].keys()
+    #     for place in place_list:
+    #         if users_unvisited_place_score[user][place]<0:
+    #             users_unvisited_place_score[user][place] = 0
+    # write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
+    # for user in user_list:
+    #     user_vectors_dict[user].update(users_unvisited_place_score[user])
+    # write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
+    # for user in user_list:
+    #     predict_list = list()
+    #     place_item = user_vectors_dict[user].items()
+    #     for i in range(0,3):
+    #         predict_list.append(choice(place_item))
+    #     predict_dict[user] = predict_list
+    # return predict_dict
 
 def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q):
+    print(len(users))
     users_unvisited_place_score = dict()
     for user in users:
         unvisited_place_score = dict()
