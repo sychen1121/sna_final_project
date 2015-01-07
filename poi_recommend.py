@@ -259,12 +259,13 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     s= time()
     predict_dict = dict()
     users_unvisited_place_score = dict()
-    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
-    user_list = list(user_near_places.keys())
+    # user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+    user_near_places = dict()
     print(len(user_list))
     # read top_k file 
     cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+    user_list = list(user_vectors_dict.keys())
     # cal user avg score
     user_avg_dict = dict()
     for user, place_dict in user_vectors_dict.items():
@@ -285,29 +286,28 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         procs.append(p)
     for i in range(nprocs):
         users_unvisited_place_score.update(out_q.get())
-        print('final user_place size'+str(len(users_unvisited_place_score)))
     for p in procs:
         p.join()
     e= time()
     print('time of cf', e-s)
-    print('final user_place size'+str(len(users_unvisited_place_score)))
+    print('over final user_place size'+str(len(users_unvisited_place_score)))
     # revise the place with score 0
-    # for user in user_list:
-    #     place_list = users_unvisited_place_score[user].keys()
-    #     for place in place_list:
-    #         if users_unvisited_place_score[user][place]<0:
-    #             users_unvisited_place_score[user][place] = 0
-    # write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
-    # for user in user_list:
-    #     user_vectors_dict[user].update(users_unvisited_place_score[user])
-    # write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
-    # for user in user_list:
-    #     predict_list = list()
-    #     place_item = user_vectors_dict[user].items()
-    #     for i in range(0,3):
-    #         predict_list.append(choice(place_item))
-    #     predict_dict[user] = predict_list
-    # return predict_dict
+    for user in user_list:
+        place_list = users_unvisited_place_score[user].keys()
+        for place in place_list:
+            if users_unvisited_place_score[user][place]<0:
+                users_unvisited_place_score[user][place] = 0
+    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
+    for user in user_list:
+        user_vectors_dict[user].update(users_unvisited_place_score[user])
+    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
+    for user in user_list:
+        predict_list = list()
+        place_item = user_vectors_dict[user].items()
+        for i in range(0,3):
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
 
 def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q):
     users_unvisited_place_score = dict()
@@ -319,8 +319,8 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
         for sim_user, cos in cos_matrix_dict[user].items():
             friend_avg = user_avg_dict[sim_user]
             for place, place_score in user_vectors_dict[sim_user].items():
-                if place in candi_set:
-                    unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
+                # if place in candi_set:
+                unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
                     # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
         users_unvisited_place_score[user] = unvisited_place_score
     print(len(users_unvisited_place_score))
