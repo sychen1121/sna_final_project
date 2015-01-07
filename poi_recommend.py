@@ -285,7 +285,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         procs.append(p)
     for i in range(nprocs):
         users_unvisited_place_score.update(out_q.get())
-        print('final user_place size'+str(len(user_unvisited_place_score)))
+        print('final user_place size'+str(len(users_unvisited_place_score)))
     for p in procs:
         p.join()
     e= time()
