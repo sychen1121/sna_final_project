@@ -12,3 +12,4 @@ from sys import argv
 
 pr.run_method(pr.cf_user_mp)
 # pr.run_method(pr.time_weighted_most_visited_top_three_method)
+# pr.run_method(pr.time_series_most_visited_one_method)
