@@ -285,6 +285,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         procs.append(p)
     for i in range(nprocs):
         users_unvisited_place_score.update(out_q.get())
+        print('final user_place size'+str(len(user_unvisited_place_score)))
     for p in procs:
         p.join()
     e= time()
@@ -308,7 +309,6 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     # return predict_dict
 
 def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q):
-    print(len(users))
     users_unvisited_place_score = dict()
     for user in users:
         unvisited_place_score = dict()
@@ -322,6 +322,7 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
                     unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
                     # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
         users_unvisited_place_score[user] = unvisited_place_score
+    print(len(users_unvisited_place_score))
     out_q.put(users_unvisited_place_score)
 
 def revise_cf_user(output_path='../output/poi_recommendation/'):
