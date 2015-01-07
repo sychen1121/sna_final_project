@@ -332,7 +332,7 @@ def cf_user(top_k=10, output_path='../output/poi_recommendation'):
 
 # =============== cf multiprocess ==================
 
-def cf_user_mp_with_distance(top_k=10, output_path='../output/poi_recommendation/'):
+def cf_user_mp_with_distance(top_k=10, output_path='../output/poi_recommendation/',nprocs = 10):
     file_path = '../input/Gowalla_new/POI/'
     social_graph = poi.create_social_graph(file_path)
     poi_graph, user_list, place_list = poi.create_poi_graph_from_file(file_path)
