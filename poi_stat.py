@@ -34,6 +34,8 @@ def get_answer_ratio(output_file, output_path='../output/poi_recommendation/', t
 	answers = dict()
 	ratio = float()
 	count = int()
+	avg_candis = int()
+	total_candis = int()
 	with open(testing_path+'Gowalla_testing.txt','r') as fi:
 		for line in fi:
 			entry = line.strip().split('\t')
@@ -46,14 +48,16 @@ def get_answer_ratio(output_file, output_path='../output/poi_recommendation/', t
 	user_places_dict = pr.read_user_places2json(output_path, output_file)
 	for user in user_list:
 		candi_places = user_places_dict[user]
+		total_candis = total_candis+len(candi_places)
 		answer_places = answers[user]
 		for place in answer_places:
 			if place in candi_places:
 				count = count+1
 	ratio = count / (3*len(user_list))
-	print(ratio)
+	avg_candis = total_candis/float(len(user_list))
+	print(str(ratio)+' 'str(avg_candis))
 	with open(output_path+'statistic.txt', 'a') as fo:
-		fo.write('The Ratio of Candidate Places in new places: '+ str(ratio))
+		fo.write('The Ratio of Candidate Places in new places: '+ str(ratio)+' with avg num candis: '+str(avg_candis))
 
 get_answer_ratio('user_candidate_places_list.txt')
 
