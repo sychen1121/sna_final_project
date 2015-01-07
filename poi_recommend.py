@@ -161,7 +161,31 @@ def norm_vector_with_time_weight(origin_list, graph):
         items_norm_dict[item] = norm_dict
     return items_norm_dict
 
-def norm_vector_with_time_distribution(origin_list, graph):
+def norm_vector_in_time_distribution(origin_list, graph):
+    items_norm_dict = dict()
+    # get all norm vectors
+    for item in origin_list:
+        normValue = float()
+        norm_dict = dict()
+        latest_time = dt.datetime.strptime(user_last_checkin_time[item], "%Y-%m-%dT%H:%M:%SZ")
+        # get vector
+        for n in graph.neighbors(item):
+            times = graph.edge[item][n]['checkin_time_list']
+            # divide to 
+            b_time_range = int()
+            for time in times:
+                checkin_time = dt.datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
+                time_range = int((latest_time - checkin_time).days/7)
+                if b_time_range< time_range:
+                    b_time_range = time_range
+            norm_dict[n] = graph.edge[item][n]['num_checkin']*(1/float(1+b_time_range))
+            normValue = normValue+norm_dict[n]**2
+        normValue = normValue**0.5
+        # norm the vector
+        for i in norm_dict.keys():
+            norm_dict[i] = norm_dict[i]/normValue
+        items_norm_dict[item] = norm_dict
+    return items_norm_dict    
 
 
 # ======= cal cosines
@@ -350,8 +374,9 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     for user in user_list:
         predict_list = list()
         place_item = users_unvisited_place_score[user].items()
-        for i in range(0,3):
-            predict_list.append(choice(place_item))
+        if len(place_item)>0:
+            for i in range(0,3):
+                predict_list.append(choice(place_item))
         predict_dict[user] = predict_list
     return predict_dict
 
