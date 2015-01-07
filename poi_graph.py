@@ -2,8 +2,8 @@ import networkx as nx
 import multiprocessing as mp
 import datetime as dt
 import math
-from poi_recommend import write_vectors2json
-from poi_recommend import read_vectors2json
+# from poi_recommend import write_vectors2json
+# from poi_recommend import read_vectors2json
 from time import time
 
 # create link between users

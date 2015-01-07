@@ -1,6 +1,6 @@
 import poi_graph as poi
 import networkx as nx
-import datetime
+import datetime as dt
 import json
 import math
 from time import time
@@ -45,7 +45,7 @@ def evaluate(method, prediction_path='../output/poi_recommendation/',testing_pat
                 answer_places.remove(place)
     accuracy = float(bingo)/(3*len(answers))
     with open('../output/poi_recommendation/result.txt', 'a') as fo:
-        fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now())+'\n')
+        fo.write(method+'\t'+str(accuracy)+'\t'+str(dt.datetime.now())+'\n')
 
 
 # write prediction dictionary to the file under output/poi_recommendation
@@ -97,13 +97,15 @@ def read_user_places2json(file_path, file_name):
 # =============== cf fucntions ==================
 
 # ====vectors of places and users
-def write_vector_matrix(user_list, place_list, poi_graph, social_graph):
+def write_vector_matrix(user_list, place_list, poi_graph):
     # norm users vector and then output
     # norm items vector and then output
-    user_norm_dict = norm_vector_by_graph(user_list,poi_graph)
-    place_norm_dict = norm_vector_by_graph(place_list, poi_graph)
-    write_vectors2json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
-    write_vectors2json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
+    # user_norm_dict = norm_vector_by_graph(user_list,poi_graph)
+    # place_norm_dict = norm_vector_by_graph(place_list, poi_graph)
+    # write_vectors2json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
+    # write_vectors2json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
+    user_time_weight_norm_dict = norm_vector_with_time_weight(user_list, poi_graph)
+    write_vectors2json(user_time_weight_norm_dict, '../output/poi_recommendation/', 'user_time_weight_norm_vector.txt')
 
 def norm_vector_by_graph(origin_list, graph):
     items_norm_dict = dict()
@@ -121,6 +123,46 @@ def norm_vector_by_graph(origin_list, graph):
             norm_dict[i] = norm_dict[i]/normValue
         items_norm_dict[item] = norm_dict
     return items_norm_dict
+
+def norm_vector_with_time_weight(origin_list, graph):
+    # get users' latest checkin time
+    user_last_checkin_time = dict()
+    previous_user = ''
+    with open('../input/Gowalla_new/POI/Gowalla_training.txt', 'r') as fi:
+        for line in fi:
+            tmp = line.strip().split()
+            user = tmp[0]
+            if user!=previous_user:
+                previous_user = user
+                user_last_checkin_time[user] = tmp[1]
+    print('over last time update')
+
+    items_norm_dict = dict()
+    # get all norm vectors
+    for item in origin_list:
+        normValue = float()
+        norm_dict = dict()
+        latest_time = dt.datetime.strptime(user_last_checkin_time[item], "%Y-%m-%dT%H:%M:%SZ")
+        # get vector
+        for n in graph.neighbors(item):
+            times = graph.edge[item][n]['checkin_time_list']
+            b_time_range = int()
+            for time in times:
+                checkin_time = dt.datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
+                time_range = int((latest_time - checkin_time).days/7)
+                if b_time_range< time_range:
+                    b_time_range = time_range
+            norm_dict[n] = graph.edge[item][n]['num_checkin']*(1/float(1+b_time_range))
+            normValue = normValue+norm_dict[n]**2
+        normValue = normValue**0.5
+        # norm the vector
+        for i in norm_dict.keys():
+            norm_dict[i] = norm_dict[i]/normValue
+        items_norm_dict[item] = norm_dict
+    return items_norm_dict
+
+def norm_vector_with_time_distribution(origin_list, graph):
+
 
 # ======= cal cosines
 def write_users_cosine(output_path, top_k, social_graph):
@@ -198,19 +240,21 @@ def cal_cosine(dict1, dict2):
 
 # recommend place to the user by cf user-based model
 def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output/poi_recommendation/',top_k=10):
+    import poi_graph as poi
     # # load social and poi graph
     # poi_graph, user_list, place_list = poi.create_poi_graph(input_path)
+    poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
     # social_graph = poi.create_social_graph(input_path)
     # poi.update_user_hometown(social_graph, poi_graph)
 
     # # write vectors of users or places
-    # write_vector_matrix(user_list, place_list, poi_graph, social_graph)
+    write_vector_matrix(user_list, place_list, poi_graph)
 
     
     # # cal user cosine matrix by social graph
     # print('start cf user-based')
     # write_users_cosine(output_path, top_k, social_graph)
-    write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
+    # write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
 
     # cal place cosine matrix
     # place_vector_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
@@ -299,13 +343,13 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
         for place in place_list:
             if users_unvisited_place_score[user][place]<0:
                 users_unvisited_place_score[user][place] = 0
-    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
-    for user in user_list:
-        user_vectors_dict[user].update(users_unvisited_place_score[user])
-    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
+    # write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
+    # for user in user_list:
+    #     user_vectors_dict[user].update(users_unvisited_place_score[user])
+    # write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
     for user in user_list:
         predict_list = list()
-        place_item = user_vectors_dict[user].items()
+        place_item = users_unvisited_place_score[user].items()
         for i in range(0,3):
             predict_list.append(choice(place_item))
         predict_dict[user] = predict_list
@@ -382,6 +426,23 @@ def most_visited_random_method(output_path='../output/poi_recommendation/'):
         predict_dict[user] = predict_list
     return predict_dict
 
+def most_visited_top_three_method(output_path='../output/poi_recommendation/'):
+    predict_dict = dict()
+    file_name = 'user_norm_vector.txt'
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    for user, place_dict in user_norm_dict.items():
+        predict_list = list()
+        place_item = place_dict.items()
+        place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+        if len(place_rank)>3:
+            for i in range(0,3):
+                predict_list.append(place_rank[i][0])
+        else:
+            for i in range(0,3):
+                predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
 def most_visited_one_method(output_path='../output/poi_recommendation/'):
     predict_dict = dict()
     file_name = 'user_norm_vector.txt'
@@ -392,6 +453,49 @@ def most_visited_one_method(output_path='../output/poi_recommendation/'):
         place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
         for i in range(0,3):
             predict_list.append(place_rank[0][0])
+        predict_dict[user] = predict_list
+    return predict_dict
+
+def most_visited_just_one_method(output_path='../output/poi_recommendation/'):
+    predict_dict = dict()
+    file_name = 'user_norm_vector.txt'
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    for user, place_dict in user_norm_dict.items():
+        predict_list = list()
+        place_item = place_dict.items()
+        place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+        predict_list.append(place_rank[0][0])
+        predict_list.append('a')
+        predict_list.append('a')
+        predict_dict[user] = predict_list
+    return predict_dict
+
+def time_weighted_most_visited_random_method(output_path='../output/poi_recommendation/',input_path='../input/Gowalla_new/POI/'):
+    predict_dict = dict()
+    file_name = 'user_time_weight_norm_vector.txt'
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    for user, place_dict in user_norm_dict.items():
+        predict_list = list()
+        place_item = place_dict.items()
+        for i in range(0,3):
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+def time_weighted_most_visited_top_three_method(output_path='../output/poi_recommendation/',input_path='../input/Gowalla_new/POI/'):
+    predict_dict = dict()
+    file_name = 'user_time_weight_norm_vector.txt'
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    for user, place_dict in user_norm_dict.items():
+        predict_list = list()
+        place_item = place_dict.items()
+        place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+        if len(place_rank)>3:
+            for i in range(0,3):
+                predict_list.append(place_rank[i][0])
+        else:
+            for i in range(0,3):
+                predict_list.append(choice(place_item))
         predict_dict[user] = predict_list
     return predict_dict
 
