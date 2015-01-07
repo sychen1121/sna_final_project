@@ -316,9 +316,10 @@ def revise_cf_user(output_path='../output/poi_recommendation/'):
         user_vectors_dict[user].update(users_unvisited_place_score[user])
     for user in user_list:
         place_list = user_vectors_dict[user].keys()
+        min_score = abs(min(user_vectors_dict[user].values()))
         for place in place_list:
             # print(user_vectors_dict[user][place])
-            user_vectors_dict[user][place] = float(user_vectors_dict[user][place])+1
+            user_vectors_dict[user][place] = float(user_vectors_dict[user][place])+min_score
     for user in user_list:
         predict_list = list()
         place_item = user_vectors_dict[user].items()
