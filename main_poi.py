@@ -10,4 +10,4 @@ from sys import argv
 # poi.update_hometown_geocode(social_graph, user_list)
 #user_near_places = poi.spot_candidate2(social_graph, poi_graph, user_list, place_list,nprocs)
 
-pr.run_method(pr.revise_cf_user)
+pr.run_method(pr.cf_user_mp)
