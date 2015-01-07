@@ -332,6 +332,74 @@ def cf_user(top_k=10, output_path='../output/poi_recommendation'):
 
 # =============== cf multiprocess ==================
 
+def cf_user_mp_with_distance(top_k=10, output_path='../output/poi_recommendation'):
+    file_path = '../input/Gowalla_new/POI/'
+    social_graph = poi.create_social_graph(file_path)
+    poi_graph, user_list, place_list = poi.create_poi_graph_from_file(file_path)
+    s= time()
+    predict_dict = dict()
+    users_unvisited_place_score = dict()
+    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+    # user_near_places = dict()    
+    # read top_k file 
+    cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
+    user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+    user_list = list(user_vectors_dict.keys())
+    # cal user avg score
+    user_avg_dict = dict()
+    for user, place_dict in user_vectors_dict.items():
+        avg = sum(place_dict.values())/float(len(place_dict))
+        user_avg_dict[user] = avg
+    # start to cal unknown places
+    num_user = len(user_list)
+    out_q = mp.Queue()
+    chunk_size = int(math.ceil(num_user/nprocs))
+    procs = list()
+    for i in range(nprocs):
+        if i == nprocs-1:
+            users = user_list[i*chunk_size:]
+        else:
+            users = user_list[i*chunk_size:(i+1)*chunk_size]
+        p = mp.Process(target=worker, args=(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q))
+        p.start()
+        procs.append(p)
+    for i in range(nprocs):
+        users_unvisited_place_score.update(out_q.get())
+    for p in procs:
+        p.join()
+    e= time()
+    print('time of cf', e-s)
+    print('over final user_place size'+str(len(users_unvisited_place_score)))
+    # revise the place with score 0
+    for user in user_list:
+        place_list = users_unvisited_place_score[user].keys()
+        for place in place_list:
+            if users_unvisited_place_score[user][place]<=0:
+                users_unvisited_place_score[user][place] = 0.0000001
+    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
+    for user in user_list:
+        user_vectors_dict[user].update(users_unvisited_place_score[user])
+    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
+    print('start cal distance\n')
+    for user in user_list:
+        for place in user_vectors_dict[user].keys():
+            user_hometown = social_graph.node[user]['hometown']
+            user_hometown_lat = user_hometown[0]
+            user_hometown_lng = user_hometown[1]
+            place_lat = poi_graph.node[place]['lat']
+            place_lng = poi_graph.node[place]['lng']
+            distance = ((user_hometown_lat-place_lat)**2+(user_hometown_lng-place_lng)**2)**0.5*1000
+            user_vectors_dict[user][place] = user_vectors_dict[user][place]/float(distance)
+    for user in user_list:
+        predict_list = list()
+        place_item = user_vectors_dict[user].items()
+        for i in range(0,3):
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+
+
 def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 10):
     s= time()
     predict_dict = dict()
