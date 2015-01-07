@@ -260,8 +260,7 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     predict_dict = dict()
     users_unvisited_place_score = dict()
     # user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
-    user_near_places = dict()
-    print(len(user_list))
+    user_near_places = dict()    
     # read top_k file 
     cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
     user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
