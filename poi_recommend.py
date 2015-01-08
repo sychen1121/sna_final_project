@@ -255,6 +255,7 @@ def write_places_cosine(output_path, input_path, top_k):
                 cate_places[cluster].append(place)
     for place in place_list:
         place_candidates_dict[place] = cate_places[place_cate[place]]
+        print(place_candidates_dict[place])
     write_cosine_matrix(place_vectors_dict, place_candidates_dict, output_path, 'place_cosine_matrix.txt')
     write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
 
@@ -292,6 +293,7 @@ def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_nam
     cos_matrix = dict()
     for i in range(nprocs):
         cos_matrix.update(out_q.get())
+    print(len(cos_matrix))
     for p in procs:
         p.join()
     write_vectors2json(cos_matrix, output_path, cos_file_name)
