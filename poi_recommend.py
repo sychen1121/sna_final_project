@@ -531,17 +531,27 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
 # recommend place to the user by cf item-based model
 def cf_item_mp(top_k=10, output_path='../output/poi_recommendation', nprocs=10):
     predict_dict = dict()
-    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+#    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+    user_near_places = dict()
+    place_file = open(output_path+'user_candidate_places_list.txt', 'r')
+    for line in place_file:
+        entry = line.strip().split()
+        user =entry[0]
+        candidates = list()
+        for p in entry[1:]:
+            candidates.append(p)
+        user_near_places[user]=candidates
+
     user_list = user_near_places.keys()
     cos_matrix_dict = read_vectors2json(output_path, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
     place_vectors_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
+    # get place average
     place_avg_dict = dict()
-    place_list = place_vectors_dict.keys()
-
     for place, user_dict in place_vectors_dict.items():
         avg = sum(user_dict.values())/float(len(user_dict))
         place_avg_dict[place] = avg
     # start to cal unknown places
+    place_list = list(place_vectors_dict.keys())
     num_place = len(place_list)
     out_q = mp.Queue()
     chunk_size = int(math.ceil(num_place/nprocs))
@@ -587,6 +597,7 @@ def cf_item_mp(top_k=10, output_path='../output/poi_recommendation', nprocs=10):
 
 def worker_item(places, user_near_places, place_avg_dict, cos_matrix_dict, place_vectors_dict, out_q):
     places_unvisited_place_score = dict()
+    print(len(places))
     for place in places:
         unvisited_place_score = dict()
         # candi_list = user_near_places[user]
