@@ -263,6 +263,7 @@ def write_places_cosine(output_path, input_path, top_k):
 # calculate and write cosine matrix
 def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name, nprocs=8):
     def worker(vectors_dict, candidates_dict, users, out_q):
+        print(len(users))
         cos_matrix_dict = dict()
         for user in users:
             candidate_list = candidates_dict[user]
