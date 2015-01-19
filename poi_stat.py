@@ -24,7 +24,7 @@ def get_place_visited_ratio(output_path = '../output/poi_recommendation/',testin
 	ratio = count / (3*len(user_list))
 	print(ratio)
 	with open(output_path+'statistic.txt', 'a') as fo:
-		fo.write('The Ratio of Visited Places in new places: '+ str(ratio))
+		fo.write('The Ratio of Visited Places in new places: '+ str(ratio)+'\n')
 
 
 
@@ -57,8 +57,9 @@ def get_answer_ratio(output_file, output_path='../output/poi_recommendation/', t
 	avg_candis = total_candis/float(len(user_list))
 	print(str(ratio)+' '+str(avg_candis))
 	with open(output_path+'statistic.txt', 'a') as fo:
-		fo.write('The Ratio of Candidate Places in new places: '+ str(ratio)+' with avg num candis: '+str(avg_candis))
+		fo.write('The Ratio of Candidate Places in new places: '+ str(ratio)+' with avg num candis: '+str(avg_candis)+'\n')
 
+# this function just for ken
 def get_friend_candi_ratio(output_path='../output/poi_recommendation/', testing_path='../input/Gowalla_new/POI/'):
 	answers = dict()
 	ratio = float()
@@ -69,7 +70,7 @@ def get_friend_candi_ratio(output_path='../output/poi_recommendation/', testing_
 	avg_friend_candi_visited_ratio = float()
 	avg_friend_candi_unvisited_ratio = float()
 	file_path = '../input/Gowalla_new/POI/'
-	social_graph = poi.create_social_graph()
+	social_graph = poi.create_social_graph(file_path)
 	user_cosine_matrix = pr.read_vectors2json(output_path, 'user_cosine_matrix.txt')
 	user_norm_vector = pr.read_vectors2json(output_path, 'user_norm_vector.txt')
 	print('over reading cosine')
@@ -96,9 +97,9 @@ def get_friend_candi_ratio(output_path='../output/poi_recommendation/', testing_
 					friend_place_unvisited.append(place)
 		avg_friend_places_num = avg_friend_places_num+ len(friend_place_unvisited)+len(friend_place_visited)
 		for answer_place in answers[user]:
-			if anwser_place in friend_place_visited:
+			if answer_place in friend_place_visited:
 				avg_friend_candi_visited_ratio = avg_friend_candi_visited_ratio+1
-			if anwser_place in friend_place_unvisited:
+			if answer_place in friend_place_unvisited:
 				avg_friend_candi_unvisited_ratio = avg_friend_candi_unvisited_ratio+1
 	avg_friend_candi_visited_ratio = avg_friend_candi_visited_ratio/ (3*len(user_list))
 	avg_friend_candi_unvisited_ratio = avg_friend_candi_unvisited_ratio/ (3*len(user_list))
@@ -106,9 +107,9 @@ def get_friend_candi_ratio(output_path='../output/poi_recommendation/', testing_
 
 	print(str(avg_friend_places_num)+' '+str(avg_friend_candi_unvisited_ratio)+' '+str(avg_friend_candi_visited_ratio))
 	with open(output_path+'statistic.txt', 'a') as fo:
-		fo.write('The Ratio of New Visite Places in Friend Visited Places: '+ str(avg_friend_candi_unvisited_ratio)+' '+str(avg_friend_candi_visited_ratio)+' with avg visited places of friends: '+str(avg_friend_places_num))
+		fo.write('The Ratio of New Visite Places in Friend Visited Places: '+ str(avg_friend_candi_unvisited_ratio)+' '+str(avg_friend_candi_visited_ratio)+' with avg visited places of friends: '+str(avg_friend_places_num)+'\n')
 
-# get_friend_candi_ratio()
-get_answer_ratio('user_candidate_places_list.txt')
+get_friend_candi_ratio()
+# get_answer_ratio('user_candidate_places_list.txt')
 
 

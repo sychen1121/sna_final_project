@@ -1,6 +1,6 @@
 import poi_graph as poi
 import networkx as nx
-import datetime
+import datetime as dt
 import json
 import math
 from time import time
@@ -45,7 +45,7 @@ def evaluate(method, prediction_path='../output/poi_recommendation/',testing_pat
                 answer_places.remove(place)
     accuracy = float(bingo)/(3*len(answers))
     with open('../output/poi_recommendation/result.txt', 'a') as fo:
-        fo.write(method+'\t'+str(accuracy)+'\t'+str(datetime.datetime.now())+'\n')
+        fo.write(method+'\t'+str(accuracy)+'\t'+str(dt.datetime.now())+'\n')
 
 
 # write prediction dictionary to the file under output/poi_recommendation
@@ -97,13 +97,19 @@ def read_user_places2json(file_path, file_name):
 # =============== cf fucntions ==================
 
 # ====vectors of places and users
-def write_vector_matrix(user_list, place_list, poi_graph, social_graph):
+def write_vector_matrix(user_list, place_list, poi_graph):
     # norm users vector and then output
     # norm items vector and then output
-    user_norm_dict = norm_vector_by_graph(user_list,poi_graph)
-    place_norm_dict = norm_vector_by_graph(place_list, poi_graph)
-    write_vectors2json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
-    write_vectors2json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
+    # user_norm_dict = norm_vector_by_graph(user_list,poi_graph)
+    # place_norm_dict = norm_vector_by_graph(place_list, poi_graph)
+    # write_vectors2json(user_norm_dict, '../output/poi_recommendation/', 'user_norm_vector.txt')
+    # write_vectors2json(place_norm_dict, '../output/poi_recommendation/', 'place_norm_vector.txt')
+    # user_time_weight_norm_dict = norm_vector_with_time_weight(user_list, poi_graph)
+    # write_vectors2json(user_time_weight_norm_dict, '../output/poi_recommendation/', 'user_time_weight_norm_vector.txt')
+
+    user_time_distribution_dict = norm_vector_in_time_distribution(user_list, poi_graph)
+    write_vectors2json(user_time_distribution_dict, '../output/poi_recommendation/', 'user_vector_in_time_distribution.txt')
+
 
 def norm_vector_by_graph(origin_list, graph):
     items_norm_dict = dict()
@@ -121,6 +127,93 @@ def norm_vector_by_graph(origin_list, graph):
             norm_dict[i] = norm_dict[i]/normValue
         items_norm_dict[item] = norm_dict
     return items_norm_dict
+
+# ======= get possible users who has the same checkin place
+def get_possible_user_from_spots(poi_graph, user_list):
+    """filtering user list to get possilbe users who have the same checkin places"""
+    user_candidates_dict = dict()
+    for user in user_list:
+        checkin_places = poi_graph.neighbors(user)
+        possible_user = list()
+        for place in checkin_places:
+            u = poi_graph.neighbors(place)
+            u.remove(user)
+            possible_user += u
+        user_candidates_dict[user] = list(set(possible_user))
+    return user_candidates_dict
+
+def write_user_cosine_spots(output_path, poi_graph, user_list, top_k, nprocs):
+    user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+    user_candidates_dict = get_possible_user_from_spots(poi_graph, user_list)
+    write_cosine_matrix(user_vectors_dict, user_candidates_dict, output_path, 'user_cosine_matrix_spots.txt', nprocs)
+    write_top_k_cosine_matrix(output_path, 'user_cosine_matrix_spots.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix_spots.txt')
+        
+
+def norm_vector_with_time_weight(origin_list, graph):
+    # get users' latest checkin time
+    user_last_checkin_time = dict()
+    previous_user = ''
+    with open('../input/Gowalla_new/POI/Gowalla_training.txt', 'r') as fi:
+        for line in fi:
+            tmp = line.strip().split()
+            user = tmp[0]
+            if user!=previous_user:
+                previous_user = user
+                user_last_checkin_time[user] = tmp[1]
+    print('over last time update')
+
+    items_norm_dict = dict()
+    # get all norm vectors
+    for item in origin_list:
+        normValue = float()
+        norm_dict = dict()
+        latest_time = dt.datetime.strptime(user_last_checkin_time[item], "%Y-%m-%dT%H:%M:%SZ")
+        # get vector
+        for n in graph.neighbors(item):
+            times = graph.edge[item][n]['checkin_time_list']
+            b_time_range = int()
+            for time in times:
+                checkin_time = dt.datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
+                time_range = int((latest_time - checkin_time).days/7)
+                if b_time_range< time_range:
+                    b_time_range = time_range
+            norm_dict[n] = graph.edge[item][n]['num_checkin']*(1/float(1+b_time_range))
+            normValue = normValue+norm_dict[n]**2
+        normValue = normValue**0.5
+        # norm the vector
+        for i in norm_dict.keys():
+            norm_dict[i] = norm_dict[i]/normValue
+        items_norm_dict[item] = norm_dict
+    return items_norm_dict
+
+def norm_vector_in_time_distribution(origin_list, graph):
+    items_norm_dict = dict()
+    # get all norm vectors
+    for item in origin_list:
+        normValue = float()
+        norm_dict = dict()
+        time_series = list()
+        # 3~9 9~15 15~21 21~3
+        # get vector
+        for i in range(4):
+            time_series.append(dict())
+        for n in graph.neighbors(item):
+            times = graph.edge[item][n]['checkin_time_list']
+            for time in times:
+                checkin_time = dt.datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ").hour
+                if checkin_time <=3:
+                    time_zone = 3
+                else:
+                    time_zone = int((checkin_time-3)/6)
+                time_series[time_zone][n] = time_series[time_zone].get(n, 0) +1
+                # no normalize 
+            # normValue = normValue+norm_dict[n]**2
+        # normValue = normValue**0.5
+        # norm the vector
+        # for i in norm_dict.keys():
+            # norm_dict[i] = norm_dict[i]/normValue
+        items_norm_dict[item] = time_series
+    return items_norm_dict    
 
 # ======= cal cosines
 def write_users_cosine(output_path, top_k, social_graph):
@@ -142,28 +235,71 @@ def write_users_cosine(output_path, top_k, social_graph):
     write_cosine_matrix(user_vectors_dict, user_candidates_dict, output_path, 'user_cosine_matrix.txt')
     write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
 
+def write_places_cosine(output_path, input_path, top_k):
+    place_vectors_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
+    place_candidates_dict = dict()
+    place_list = place_vectors_dict.keys()
+    # read place cat to find candidates list
+    place_cate = dict()
+    cate_places = dict()
+    with open(input_path+'Poi_spot_cluster.csv', 'r') as fi:
+        for line in fi:
+            tmp =line.strip().split(',')
+            place = tmp[0]
+            cluster = tmp[-1]
+            place_cate[place] = cluster
+            try: 
+                cate_places[cluster].append(place)
+            except:
+                cate_places[cluster] = list()
+                cate_places[cluster].append(place)
+    for place in place_list:
+        place_candidates_dict[place] = cate_places[place_cate[place]]
+    write_cosine_matrix(place_vectors_dict, place_candidates_dict, output_path, 'place_cosine_matrix.txt')
+    write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
+
+
 
 # calculate and write cosine matrix
-def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name):
+def write_cosine_matrix(vectors_dict, candidates_dict, output_path, cos_file_name, nprocs=8):
+    def worker(vectors_dict, candidates_dict, users, out_q):
+        print(len(users))
+        cos_matrix_dict = dict()
+        for user in users:
+            candidate_list = candidates_dict[user]
+            for candidate in candidate_list:
+                cos = cal_cosine(vectors_dict[user], vectors_dict[candidate])
+                try: 
+                    cos_matrix_dict[user][candidate] = cos
+                except:
+                    cos_matrix_dict[user] = dict()
+                    cos_matrix_dict[user][candidate] = cos
+        out_q.put(cos_matrix_dict)
+    # master part
     print('start computing cosine matrix')
-    cos_matrix_dict = dict()
-    item_list = sorted(candidates_dict.keys())
-    # for every item, calculating cosine similarity
+    user_list = sorted(candidates_dict.keys())
+    num_user = len(user_list)
+    out_q = mp.Queue()
+    chunk_size = int(math.ceil(num_user/nprocs))
+    procs = []
+    for i  in range(nprocs):
+        if i == nprocs - 1:
+            users = user_list[i*chunk_size:]
+        else:
+            users = user_list[i*chunk_size:(i+1)*chunk_size]
+        p = mp.Process(target=worker, args=(vectors_dict, candidates_dict, users, out_q))
+        procs.append(p)
+        p.start()
+    cos_matrix = dict()
+    for i in range(nprocs):
+        cos_matrix.update(out_q.get())
+    print(len(cos_matrix))
+    for p in procs:
+        p.join()
+    write_vectors2json(cos_matrix, output_path, cos_file_name)
+    e=time()
+    print('time of write_cosine_matrixs', e-s)
 
-    for item in item_list:
-        s = time()
-        print(item)
-        candidate_list = candidates_dict[item]
-        for candidate in candidate_list:
-            cos = cal_cosine(vectors_dict[item], vectors_dict[candidate])
-            try: 
-                cos_matrix_dict[item][candidate] = cos
-            except:
-                cos_matrix_dict[item] = dict()
-                cos_matrix_dict[item][candidate] = cos
-        e= time()
-        print(e-s)
-    write_vectors2json(cos_matrix_dict, output_path, cos_file_name)
 
     
 # write top k cosine matrix to the file
@@ -200,23 +336,25 @@ def cal_cosine(dict1, dict2):
 def cf_preprocess(input_path='../input/Gowalla_new/POI/', output_path='../output/poi_recommendation/',top_k=10):
     # # load social and poi graph
     # poi_graph, user_list, place_list = poi.create_poi_graph(input_path)
+    # poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
     # social_graph = poi.create_social_graph(input_path)
     # poi.update_user_hometown(social_graph, poi_graph)
 
     # # write vectors of users or places
-    # write_vector_matrix(user_list, place_list, poi_graph, social_graph)
+    # write_vector_matrix(user_list, place_list, poi_graph)
 
     
     # # cal user cosine matrix by social graph
     # print('start cf user-based')
     # write_users_cosine(output_path, top_k, social_graph)
-    write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
+    # write_top_k_cosine_matrix(output_path, 'user_cosine_matrix.txt', top_k, 'user_top_'+str(top_k)+'_cosine_matrix.txt')
 
     # cal place cosine matrix
     # place_vector_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
     # write_cosine_matrix(place_vector_dict, output_path, 'place_cosine_matrix.txt')
     # write_top_k_cosine_matrix(output_path, 'place_cosine_matrix.txt', top_k, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
 
+    write_places_cosine(output_path, input_path, top_k)
 
 
 # ============= recommend methods ===============
@@ -258,7 +396,11 @@ def cf_user(top_k=10, output_path='../output/poi_recommendation'):
 
 # =============== cf multiprocess ==================
 
-def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 10):
+def cf_user_mp_with_distance(top_k=10, output_path='../output/poi_recommendation/',nprocs = 10):
+    file_path = '../input/Gowalla_new/POI/'
+    social_graph = poi.create_social_graph(file_path)
+    poi_graph, user_list, place_list = poi.create_poi_graph_from_file(file_path)
+    poi.update_user_hometown(social_graph, poi_graph)
     s= time()
     predict_dict = dict()
     users_unvisited_place_score = dict()
@@ -297,12 +439,24 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
     for user in user_list:
         place_list = users_unvisited_place_score[user].keys()
         for place in place_list:
-            if users_unvisited_place_score[user][place]<0:
-                users_unvisited_place_score[user][place] = 0
+            if users_unvisited_place_score[user][place]<=0:
+                users_unvisited_place_score[user][place] = 0.0000001
     write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score.txt')
     for user in user_list:
         user_vectors_dict[user].update(users_unvisited_place_score[user])
     write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector.txt')
+    print('start cal distance\n')
+    for user in user_list:
+        for place in user_vectors_dict[user].keys():
+            user_hometown = social_graph.node[user]['hometown']
+            user_hometown_lat = float(user_hometown[0])
+            user_hometown_lng = float(user_hometown[1])
+            place_lat = poi_graph.node[place]['lat']
+            place_lng = poi_graph.node[place]['lng']
+            distance = ((user_hometown_lat-place_lat)**2+(user_hometown_lng-place_lng)**2)**0.5*1000
+            if distance ==0:
+                distance=1
+            user_vectors_dict[user][place] = user_vectors_dict[user][place]/float(distance)
     for user in user_list:
         predict_list = list()
         place_item = user_vectors_dict[user].items()
@@ -310,6 +464,156 @@ def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 1
             predict_list.append(choice(place_item))
         predict_dict[user] = predict_list
     return predict_dict
+
+
+
+def cf_user_mp(top_k=10, output_path='../output/poi_recommendation/', nprocs = 10):
+    s= time()
+    predict_dict = dict()
+    users_unvisited_place_score = dict()
+    user_near_places = dict()
+    place_file = open(output_path+'user_candidate_places_list.txt', 'r')
+    for line in place_file:
+        entry = line.strip().split()
+        user =entry[0]
+        candidates = list()
+        for p in entry[1:]:
+            candidates.append(p)
+        user_near_places[user]=candidates
+    #user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+    # read top_k file 
+    cos_matrix_dict = read_vectors2json(output_path, 'user_top_'+str(top_k)+'_cosine_matrix_spots.txt')
+    user_vectors_dict = read_vectors2json(output_path, 'user_norm_vector.txt')
+    user_list = list(user_vectors_dict.keys())
+    # cal user avg score
+    user_avg_dict = dict()
+    for user, place_dict in user_vectors_dict.items():
+        avg = sum(place_dict.values())/float(len(place_dict))
+        user_avg_dict[user] = avg
+    # start to cal unknown places
+    num_user = len(user_list)
+    out_q = mp.Queue()
+    chunk_size = int(math.ceil(num_user/nprocs))
+    procs = list()
+    for i in range(nprocs):
+        if i == nprocs-1:
+            users = user_list[i*chunk_size:]
+        else:
+            users = user_list[i*chunk_size:(i+1)*chunk_size]
+        p = mp.Process(target=worker, args=(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q))
+        p.start()
+        procs.append(p)
+    for i in range(nprocs):
+        users_unvisited_place_score.update(out_q.get())
+    for p in procs:
+        p.join()
+    e= time()
+    print('time of cf', e-s)
+    print('over final user_place size'+str(len(users_unvisited_place_score)))
+    # revise the place with score 0
+    for user in user_list:
+        place_list = users_unvisited_place_score[user].keys()
+        for place in place_list:
+            if users_unvisited_place_score[user][place]<=0:
+                users_unvisited_place_score[user][place] = 0.0000001
+    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score_spots.txt')
+    for user in user_list:
+        user_vectors_dict[user].update(users_unvisited_place_score[user])
+    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector_spots_spots.txt')
+    for user in user_list:
+        predict_list = list()
+        place_item = user_vectors_dict[user].items()
+        for i in range(0,3):
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+# recommend place to the user by cf item-based model
+def cf_item_mp(top_k=10, output_path='../output/poi_recommendation', nprocs=10):
+    predict_dict = dict()
+#    user_near_places = read_vectors2json(output_path, 'user_near_places.txt')
+    user_near_places = dict()
+    place_file = open(output_path+'user_candidate_places_list.txt', 'r')
+    for line in place_file:
+        entry = line.strip().split()
+        user =entry[0]
+        candidates = list()
+        for p in entry[1:]:
+            candidates.append(p)
+        user_near_places[user]=candidates
+
+    user_list = user_near_places.keys()
+    cos_matrix_dict = read_vectors2json(output_path, 'place_top_'+str(top_k)+'_cosine_matrix.txt')
+    place_vectors_dict = read_vectors2json(output_path, 'place_norm_vector.txt')
+    # get place average
+    place_avg_dict = dict()
+    for place, user_dict in place_vectors_dict.items():
+        avg = sum(user_dict.values())/float(len(user_dict))
+        place_avg_dict[place] = avg
+    # start to cal unknown places
+    place_list = list(place_vectors_dict.keys())
+    num_place = len(place_list)
+    out_q = mp.Queue()
+    chunk_size = int(math.ceil(num_place/nprocs))
+    procs = list()
+    for i in range(nprocs):
+        if i == nprocs-1:
+            places = place_list[i*chunk_size:]
+        else:
+            places = place_list[i*chunk_size:(i+1)*chunk_size]
+        p = mp.Process(target=worker_item, args=(places, user_near_places, place_avg_dict, cos_matrix_dict, place_vectors_dict, out_q))
+        p.start()
+        procs.append(p)
+    for i in range(nprocs):
+        users_unvisited_place_score.update(out_q.get())
+    for p in procs:
+        p.join()
+    e= time()
+    print('time of cf', e-s)
+    print('over final user_place size'+str(len(users_unvisited_place_score)))
+    # place: user: score
+    # revise the place with score 0
+    for place in place_list:
+        user_list = users_unvisited_place_score[place].keys()
+        for user in user_list:
+            if users_unvisited_place_score[place][user]<=0:
+                users_unvisited_place_score[place][user] = 0.0000001
+    write_vectors2json(users_unvisited_place_score, output_path, 'user_unvisited_place_score_item_based.txt')
+    for place in place_list:
+        user_vectors_dict[place].update(users_unvisited_place_score[place])
+    write_vectors2json(user_vectors_dict, output_path, 'user_cf_user_vector_item_based.txt')
+    for user in user_list:
+        predict_list = list()
+        place_item = list()
+        for place in user_near_places[user]:
+            try:
+                place_item.append((place, user_vectors_dict[place][user]))
+            except:
+                pass
+        for i in range(0,3):
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+def worker_item(places, user_near_places, place_avg_dict, cos_matrix_dict, place_vectors_dict, out_q):
+    places_unvisited_place_score = dict()
+    print(len(places))
+    for place in places:
+        unvisited_place_score = dict()
+        # candi_list = user_near_places[user]
+        candi_list = place_vectors_dict[place].keys()
+        candi_set = set(candi_list)
+        avg = place_avg_dict[user]
+        for sim_place, cos in cos_matrix_dict[place].items():
+            friend_avg = place_avg_dict[sim_place]
+            for user, user_score in place_vectors_dict[sim_place].items():
+                # if place in candi_set:
+                if user not in candi_list:
+                    unvisited_place_score[user] = unvisited_place_score.get(user, 0) + cos*(user_score-friend_avg)
+                    # place_vectors_dict[user][place] = place_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
+        places_unvisited_place_score[place] = unvisited_place_score
+    print(len(places_unvisited_place_score))
+    out_q.put(places_unvisited_place_score)
 
 def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors_dict, out_q):
     users_unvisited_place_score = dict()
@@ -319,14 +623,17 @@ def worker(users, user_near_places, user_avg_dict, cos_matrix_dict, user_vectors
         candi_list = user_vectors_dict[user].keys()
         candi_set = set(candi_list)
         avg = user_avg_dict[user]
-        for sim_user, cos in cos_matrix_dict[user].items():
-            friend_avg = user_avg_dict[sim_user]
-            for place, place_score in user_vectors_dict[sim_user].items():
-                # if place in candi_set:
-                if place not in candi_list:
-                    unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
-                    # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
-        users_unvisited_place_score[user] = unvisited_place_score
+        try:
+            for sim_user, cos in cos_matrix_dict[user].items():
+                friend_avg = user_avg_dict[sim_user]
+                for place, place_score in user_vectors_dict[sim_user].items():
+                    # if place in candi_set:
+                    if place not in candi_list:
+                        unvisited_place_score[place] = unvisited_place_score.get(place, 0) + cos*(place_score-friend_avg)
+                        # user_vectors_dict[user][place] = user_vectors_dict[user].get(place,0)+ cos*(place_score-friend_avg)
+            users_unvisited_place_score[user] = unvisited_place_score
+        except:
+            users_unvisited_place_score[user] = dict()
     print(len(users_unvisited_place_score))
     out_q.put(users_unvisited_place_score)
 
@@ -354,19 +661,7 @@ def revise_cf_user(output_path='../output/poi_recommendation/'):
 
 
 
-# recommend place to the user by cf item-based model
-def cf_item(top_k=10, output_path='../output/poi_recommendation'):
-    predict_dict = dict()
-    user_near_places = read_vectors2json(output_path, '')
-    user_list = user_near_places.keys()
-    # need to be add
-    for user in user_list:
-        predict_list = list()
-        for i in range(0,3):
-            predict_list.append(choice(place_item))
-        predict_dict[user] = predict_list
-    return predict_dict
-    return predict_dict
+
 
 
 
@@ -379,6 +674,23 @@ def most_visited_random_method(output_path='../output/poi_recommendation/'):
         place_item = place_dict.items()
         for i in range(0,3):
             predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+def most_visited_top_three_method(output_path='../output/poi_recommendation/'):
+    predict_dict = dict()
+    file_name = 'user_norm_vector.txt'
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    for user, place_dict in user_norm_dict.items():
+        predict_list = list()
+        place_item = place_dict.items()
+        place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+        if len(place_rank)>3:
+            for i in range(0,3):
+                predict_list.append(place_rank[i][0])
+        else:
+            for i in range(0,3):
+                predict_list.append(choice(place_item))
         predict_dict[user] = predict_list
     return predict_dict
 
@@ -395,6 +707,116 @@ def most_visited_one_method(output_path='../output/poi_recommendation/'):
         predict_dict[user] = predict_list
     return predict_dict
 
+def most_visited_just_one_method(output_path='../output/poi_recommendation/'):
+    predict_dict = dict()
+    file_name = 'user_norm_vector.txt'
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    for user, place_dict in user_norm_dict.items():
+        predict_list = list()
+        place_item = place_dict.items()
+        place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+        predict_list.append(place_rank[0][0])
+        predict_list.append('a')
+        predict_list.append('a')
+        predict_dict[user] = predict_list
+    return predict_dict
+
+def time_weighted_most_visited_random_method(output_path='../output/poi_recommendation/',input_path='../input/Gowalla_new/POI/'):
+    predict_dict = dict()
+    file_name = 'user_time_weight_norm_vector.txt'
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    for user, place_dict in user_norm_dict.items():
+        predict_list = list()
+        place_item = place_dict.items()
+        for i in range(0,3):
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+def time_weighted_most_visited_top_three_method(output_path='../output/poi_recommendation/',input_path='../input/Gowalla_new/POI/'):
+    predict_dict = dict()
+    file_name = 'user_time_weight_norm_vector.txt'
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    for user, place_dict in user_norm_dict.items():
+        predict_list = list()
+        place_item = place_dict.items()
+        place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+        if len(place_rank)>3:
+            for i in range(0,3):
+                predict_list.append(place_rank[i][0])
+        else:
+            for i in range(0,3):
+                predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+def time_series_most_visited_one_method(output_path='../output/poi_recommendation/',input_path='../input/Gowalla_new/POI/'):
+    predict_dict = dict()
+    file_name = 'user_vector_in_time_distribution.txt'
+
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    user_list = user_norm_dict.keys()
+    answer_time_dict=dict()
+
+    with open(input_path+'Gowalla_testing.txt', 'r') as fi:
+        for line in fi:
+            tmp = line.strip().split()
+            user = tmp[0]
+            checkin_time = dt.datetime.strptime(tmp[1], "%Y-%m-%dT%H:%M:%SZ").hour
+            time_zone = int()
+            if checkin_time <=3:
+                time_zone = 3
+            else:
+                time_zone = int((checkin_time-3)/6)
+            try:
+                answer_time_dict[user].append(time_zone)
+            except:
+                answer_time_dict[user] = list()
+                answer_time_dict[user].append(time_zone)        
+    for user, time_series in user_norm_dict.items():
+        predict_list = list()
+        zones = answer_time_dict[user]
+        for zone in zones:
+            place_item = time_series[zone].items()
+            iteration = zone
+            while len(place_item)==0:
+                iteration = (iteration+1)%4
+                place_item = time_series[iteration].items()
+            predict_list.append(choice(place_item))
+        predict_dict[user] = predict_list
+    return predict_dict
+
+    predict_dict = dict()
+    file_name = 'user_vector_in_time_distribution.txt'
+
+    user_norm_dict = read_vectors2json(output_path, file_name)
+    user_list = user_norm_dict.keys()
+    answer_time_dict=dict()
+
+    with open(input_path+'Gowalla_testing.txt', 'r') as fi:
+        for line in fi:
+            tmp = line.strip().split()
+            user = tmp[0]
+            checkin_time = dt.datetime.strptime(tmp[1], "%Y-%m-%dT%H:%M:%SZ").hour
+            time_zone = int()
+            if checkin_time <=3:
+                time_zone = 3
+            else:
+                time_zone = int((checkin_time-3)/6)
+            try:
+                answer_time_dict[user].append(time_zone)
+            except:
+                answer_time_dict[user] = list()
+                answer_time_dict[user].append(time_zone)        
+    for user, time_series in user_norm_dict.items():
+        predict_list = list()
+        zones = answer_time_dict[user]
+        for zone in zones:
+            place_item = time_series[zone].items()
+            place_rank = sorted(place_item, key=lambda d:d[1], reverse=True)
+            predict_list.append(place_rank[0][0])
+        predict_dict[user] = predict_list
+    return predict_dict
 # add time stamp in location to predict 
 
 
@@ -403,4 +825,4 @@ def most_visited_one_method(output_path='../output/poi_recommendation/'):
 
 # run_method(cf_user)
 
-# cf_preprocess()
+cf_preprocess()

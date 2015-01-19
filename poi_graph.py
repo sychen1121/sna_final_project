@@ -2,8 +2,8 @@ import networkx as nx
 import multiprocessing as mp
 import datetime as dt
 import math
-from poi_recommend import write_vectors2json
-from poi_recommend import read_vectors2json
+# from poi_recommend import write_vectors2json
+# from poi_recommend import read_vectors2json
 from time import time
 
 # create link between users
@@ -51,15 +51,14 @@ def create_poi_graph_from_file(file_path):
     for line in user_stat:
        user = line.strip().split()[0]
        total_checkin_spot = int(line.strip().split()[1])
-       total_checkin = int(line.strip().split()[2])
-       tmp_list.append((user, {'type':'user','total_checkin_spot': total_checkin_spot, 'total_checkin': total_checkin}))
+       tmp_list.append((user, {'type':'user','total_checkin_spot': total_checkin_spot}))
        user_list.append(user)
     poi_graph.add_nodes_from(tmp_list)
     # create place list and add place info into poi_graph
     checkin_spot_stat = open(file_path+'checkin_spot_stat.txt', 'r')
     tmp_list = list()
     for line in checkin_spot_stat:
-        entry = line.strip().split()
+        entry = line.strip().split(',')
         placeID = entry[0]
         lat = float(entry[1])
         lng = float(entry[2])
