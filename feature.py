@@ -10,6 +10,13 @@ def social_feature(s_graph,n1,n2):
     n2_neightbor = s_graph.neighbors(n2)
     common_n = set(n1_neightbor).intersection(n2_neightbor)
     
+    TCFC = 0
+    for cf in common_n:
+        cf_neightbor = s_graph.neighbors(cf)
+        common_c1 = set(n1_neightbor).intersection(cf_neightbor)
+        common_c2 = set(n2_neightbor).intersection(cf_neightbor)
+        TCFC = TCFC + common_c1*common_c2
+    
     neiNum1 = len(n1_neightbor)
     neiNum2 = len(n2_neightbor)
     
@@ -29,7 +36,7 @@ def social_feature(s_graph,n1,n2):
     
     pa = len(n1_neightbor)*len(n2_neightbor)
     
-    return len(common_n),overlap_n,aa_n,pa
+    return len(common_n),overlap_n,aa_n,pa,TCFC
     
 def place_feature(p_graph,n1,n2):
     n1_place = p_graph.neighbors(n1)
@@ -97,13 +104,13 @@ def place_feature(p_graph,n1,n2):
     pp = len(n1_place)*len(n2_place)
     
     
-    m1 = p_graph.node[n1]['hometown']
-    m2 = p_graph.node[n2]['hometown']
-    l1 = (p_graph.node[m1]['lat'],p_graph.node[m1]['lng'])
-    l2 = (p_graph.node[m2]['lat'],p_graph.node[m2]['lng'])
+#     m1 = p_graph.node[n1]['hometown']
+#     m2 = p_graph.node[n2]['hometown']
+    l1 = (p_graph.node[n1]['lat'],p_graph.node[n1]['lng'])
+    l2 = (p_graph.node[n2]['lat'],p_graph.node[n2]['lng'])
     
     geodist = geo_dist(l1,l2)
-    w_geodist = geodist/((p_graph.edge[n1][m1]['num_checkin'])*(p_graph.edge[n2][m2]['num_checkin']))
+    w_geodist = geodist/(pNum1*pNum2)
     
     if l1[0]==0.0 or l2[0] == 0.0:
         geodist = ""
