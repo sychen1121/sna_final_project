@@ -10,6 +10,7 @@ def social_feature(s_graph,n1,n2):
     n1_neightbor = s_graph.neighbors(n1)
     n2_neightbor = s_graph.neighbors(n2)
     common_n = set(n1_neightbor).intersection(n2_neightbor)
+#     alpha_n = set(n1_neightbor).union(n2_neightbor)
     
     TCFC = 0
     for cf in common_n:
