@@ -11,13 +11,14 @@ def social_feature(s_graph,n1,n2):
     n1_neightbor = s_graph.neighbors(n1)
     n2_neightbor = s_graph.neighbors(n2)
     common_n = set(n1_neightbor).intersection(n2_neightbor)
+#     alpha_n = set(n1_neightbor).union(n2_neightbor)
     
-    # TCFC = 0
-    # for cf in common_n:
-    #     cf_neightbor = s_graph.neighbors(cf)
-    #     common_c1 = set(n1_neightbor).intersection(cf_neightbor)
-    #     common_c2 = set(n2_neightbor).intersection(cf_neightbor)
-    #     TCFC = TCFC + common_c1*common_c2
+    TCFC = 0
+    for cf in common_n:
+        cf_neightbor = s_graph.neighbors(cf)
+        common_c1 = set(n1_neightbor).intersection(cf_neightbor)
+        common_c2 = set(n2_neightbor).intersection(cf_neightbor)
+        TCFC = TCFC + len(common_c1)*len(common_c2)
     
     neiNum1 = len(n1_neightbor)
     neiNum2 = len(n2_neightbor)
@@ -38,14 +39,51 @@ def social_feature(s_graph,n1,n2):
     
     pa = len(n1_neightbor)*len(n2_neightbor)
     
-    return len(common_n),overlap_n,aa_n,pa
-    # return len(common_n),overlap_n,aa_n,pa,TCFC
+#     return len(common_n),overlap_n,aa_n,pa
+    return len(common_n),overlap_n,aa_n,pa,TCFC
     
 def place_feature(p_graph,n1,n2):
     n1_place = p_graph.neighbors(n1)
     n2_place = p_graph.neighbors(n2)
     common_p= set(n1_place).intersection(n2_place)
     union_p = set(n1_place).union(n2_place)
+    
+#cccp    
+    cat1 = dict()
+    for p in n1_place:
+        temp_c = p_graph.node[p]['category'] 
+        if temp_c != 0:
+            if temp_c in cat1:
+                cat1[temp_c]=cat1[temp_c]+1
+            else:
+                cat1[temp_c] = 1
+        
+    cat2 = dict()
+    for p in n2_place:
+        temp_c = p_graph.node[p]['category'] 
+        if temp_c != 0:
+            if temp_c in cat2:
+                cat2[temp_c]=cat2[temp_c]+1
+            else:
+                cat2[temp_c] = 1
+    
+    common_cat = set(cat2.keys()).intersection(cat1.keys())
+    
+    cccp = 0
+    phi1 = 0
+    phi2 = 0
+    
+    for catgory in set(cat2.keys()):
+        phi2 += cat2[catgory]**2
+    for catgory in set(cat1.keys()):
+        phi1 += cat1[catgory]**2
+    
+    for cc in common_cat:
+        cccp += cat2[cc]*cat1[cc]
+    
+    cccpr = (cccp+1)/(float(phi1*phi2)**(1/2)+1)
+
+#cccp  
     
     pNum1 =len(n1_place)
     pNum2 =len(n2_place)
@@ -119,7 +157,7 @@ def place_feature(p_graph,n1,n2):
         geodist = ""
         w_geodist = ""
 
-    return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist
+    return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr
 
 
 def temporal_place_feature(p_graph, n1, n2, popular_places):
