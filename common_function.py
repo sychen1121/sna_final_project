@@ -25,7 +25,7 @@ def create_social_graph(file_path):
     print('time for social_graph', e-s)
     return social_graph, not_friend_list
 
-def create_checkin_info(file_path):
+def create_checkin_info(file_path,s_graph):
     """create_checkin_information from file_path"""
     import networkx as nx
     import datetime as dt
@@ -56,6 +56,7 @@ def create_checkin_info(file_path):
                 total = checkin_info.node[placeID]['total_checkin']
             else:
                 total = 0
+            
             clist.append(checkin_time)
             checkin_info.add_node(user, type='user')
             checkin_info.add_edge(user, placeID, num_checkin=num+1, checkin_time_list=clist)
@@ -82,7 +83,13 @@ def create_checkin_info(file_path):
     print("time of entropy", e-s)
 
     s = time()
-    update_user_hometown(checkin_info)
+    fr_ht = open("../output/link_prediction/HT_geo_info.txt", mode='r')
+    ht = list()
+    for line in fr_ht.readlines():
+        line = line.split("\t")
+        ht.append([line[0],line[1],line[2]])
+        
+    update_user_hometown(checkin_info,s_graph,ht)
     e = time()
     print("time of update_user_hometown",e-s)
 #    print('2999', checkin_info.node[checkin_info.node[2999]['hometown']]['lat'])
@@ -91,17 +98,36 @@ def create_checkin_info(file_path):
 #    print(checkin_info.node['p6616040'])
 
     return checkin_info
-def update_user_hometown(checkin_info):
+def update_user_hometown(checkin_info,s_graph,ht):
     """add a user's hometown to a node's attribute in checkin_info"""
     for u in checkin_info.nodes():
         if checkin_info.node[u]['type'] == 'user':
-            checkin_places = checkin_info.neighbors(u)
-            checkin_num_list = list()
-            for p in checkin_places:
-                checkin_num_list.append((p, checkin_info.edge[u][p]['num_checkin']))
-            h_id, checkin = max(checkin_num_list, key=lambda x: x[1])
-#            print(u,checkin)
-            checkin_info.add_node(u, hometown=h_id)
+            checkin_info.node[u]['hometown'] = s_graph.node[u]['hometown'].strip(' \"\'#*&%@$+-').lower()
+            u_ht = checkin_info.node[u]['hometown']
+            for item in ht:
+                if u_ht =="none" or len(u_ht)==0:
+                    checkin_info.node[u]['lat']=0.0
+                    checkin_info.node[u]['lng']=0.0
+                    break
+                elif item[0]==u_ht:
+#                     print(type(item[1]))
+#                     print(item[1])
+#                     print(u_ht)
+                    if len(item[1]) == 0:
+                        checkin_info.node[u]['lat']=0.0
+                        checkin_info.node[u]['lng']=0.0
+                        break
+                    else :
+                        checkin_info.node[u]['lat']=float(item[1])
+                        checkin_info.node[u]['lng']=float(item[2])
+                        break
+#             checkin_places = checkin_info.neighbors(u)
+#             checkin_num_list = list()
+#             for p in checkin_places:
+#                 checkin_num_list.append((p, checkin_info.edge[u][p]['num_checkin']))
+#             h_id, checkin = max(checkin_num_list, key=lambda x: x[1])
+# #            print(u,checkin)
+#             checkin_info.add_node(u, hometown=h_id)
 
 def update_place_info(file_path, checkin_info):
     """update the basic information of a place to the graph"""
