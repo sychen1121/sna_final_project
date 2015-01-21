@@ -287,4 +287,47 @@ def temporal_place_feature(p_graph, n1, n2):
     StCS = StCS/T
 
     return TCS, STCR, StCR, StTCR, StCS
-        
+
+def place_feature_time_constrain(p_graph, n1, n2):
+    """ the function compute the following features past 2 months, 4 months, 6 months,
+        phi_co:  times that n1 and n2 check-in at the same place within the span of 15 mins
+        phi_dco: # of distinct places where n1 an n2 check-in within 15 mins
+        phi_dlo: # of distinct common place where n1 and n2 checkin
+    """
+    place_n1 = set(p_graph.neighbors(n1))
+    place_n2 = set(p_graph.neighbors(n2))
+    tmp_time_list = list()
+    for p in place_n1:
+        tmp_time_list+= p_graph.edge[n1][p]['checkin_time_list']
+    for p in place_n2:
+        tmp_time_list += p_graph.edge[n2][p]['checkin_time_list']
+    current_timestamp = dt.datetime.strptime(max(tmp_time_list)[0:10], "%Y-%m-%d")
+
+    phi_co  = 0
+    phi_dco = 0
+    phi_dlo = 0
+    for p in place_n1 & place_n2:
+       t1_list = p_graph.edge[n1][p]['checkin_time_list']
+       t2_list = p_graph.edge[n2][p]['checkin_time_list']
+       dco_f1 = False
+       dco_f2 = False
+       dlo_f1 = False
+       dlo_f2 = False
+       for t1 in t1_list:
+           t1 = dt.datetime.strptime(t1, "%Y-%m-$dT%H:%M:%S")
+           if t1 - current_timestamp <= dt.timedelta(60):
+               dco_f1 = True
+               dlo_f1 = True
+               for t2 in t2_list:
+                   t2 = dt.datetime.strptime(t2, "%Y-%m-$dT%H:%M:%S")
+                   if t2 - current_timestamp <= dt.timedelta(90):
+                       dlo_f2 = True
+                       if t1-t2 <= dt.timedelta(0, 900):
+                           phi_co += 1
+                           dco_f2 = True
+                           break
+        if dco_f1 and dco_f2:
+            phi_dco += 1
+        if dlo_f1 and dlo_f2:
+            phi_dlo += 1
+    return phi_co, phi_dco, phi_dlo
