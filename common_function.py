@@ -83,7 +83,7 @@ def create_checkin_info(file_path,s_graph):
     print("time of entropy", e-s)
 
     s = time()
-    fr_ht = open("../output/link_prediction/HT_geo_info.txt", mode='r')
+    fr_ht = open("output/link_prediction/HT_geo_info.txt", mode='r')
     ht = list()
     for line in fr_ht.readlines():
         line = line.split("\t")

@@ -136,7 +136,7 @@ def temporal_place_feature(p_graph, n1, n2):
     N = 10
     T = 24
     for node in p_graph.nodes():
-        if node['type']=='place':
+        if p_graph.node[node]['type']=='place':
             for neighbor in p_graph.neighbors(node):
                 num = len(p_graph[node][neighbor]['checkin_time_list'])
                 fre_places[place] = fre_places.get(place, 0)+num

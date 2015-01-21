@@ -62,8 +62,8 @@ if __name__ == '__main__':
 # command execution
     if command == 'train': # compute train features
 # initialize 
-        checkin_graph = cf.create_checkin_info(input_path)
         social_graph, not_friend_list = cf.create_social_graph(input_path)
+        checkin_graph = cf.create_checkin_info(input_path, social_graph)
         train_feature_file = open(output_path+'train_feature.csv', 'w')
         print('label,n1,n2,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist',file=train_feature_file)
         label_1_feature = computeFeature(social_graph, checkin_graph, social_graph.edges(), nprocs)
@@ -72,8 +72,8 @@ if __name__ == '__main__':
         writeFeature(train_feature_file, 0, label_0_feature)
     elif command == 'test': # compute test features
 # initialize 
-        checkin_graph = cf.create_checkin_info(input_path)
         social_graph, not_friend_list = cf.create_social_graph(input_path)
+        checkin_graph = cf.create_checkin_info(input_path, social_graph)
         test = open(input_path+'gowalla.test.txt', 'r')
         edges_list = list()
         for line in test:
