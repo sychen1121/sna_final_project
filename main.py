@@ -46,7 +46,7 @@ def worker(social_graph, checkin_graph, edges, out_q):
         n2 = edge[1]
         result  = ft.social_feature(social_graph, n1, n2)
         result += ft.place_feature(checkin_graph, n1, n2)
-        result += ft.temporal_place_feature(checkin_graph, n1, n2)
+#        result += ft.temporal_place_feature(checkin_graph, n1, n2)
         if len(edge) == 3:
             answer = edge[2]
             out_list.append((answer,n1,n2)+result)
