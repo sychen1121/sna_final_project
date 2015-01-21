@@ -1,6 +1,6 @@
 import math
 import numpy as np
-import datetiem as dt
+import datetime as dt
 
 def geo_dist(l1,l2):
     return math.sqrt((l2[1]-l1[1])**2 + (l2[0]-l1[0])**2)
@@ -11,12 +11,12 @@ def social_feature(s_graph,n1,n2):
     n2_neightbor = s_graph.neighbors(n2)
     common_n = set(n1_neightbor).intersection(n2_neightbor)
     
-    TCFC = 0
-    for cf in common_n:
-        cf_neightbor = s_graph.neighbors(cf)
-        common_c1 = set(n1_neightbor).intersection(cf_neightbor)
-        common_c2 = set(n2_neightbor).intersection(cf_neightbor)
-        TCFC = TCFC + common_c1*common_c2
+    # TCFC = 0
+    # for cf in common_n:
+    #     cf_neightbor = s_graph.neighbors(cf)
+    #     common_c1 = set(n1_neightbor).intersection(cf_neightbor)
+    #     common_c2 = set(n2_neightbor).intersection(cf_neightbor)
+    #     TCFC = TCFC + common_c1*common_c2
     
     neiNum1 = len(n1_neightbor)
     neiNum2 = len(n2_neightbor)
@@ -37,7 +37,8 @@ def social_feature(s_graph,n1,n2):
     
     pa = len(n1_neightbor)*len(n2_neightbor)
     
-    return len(common_n),overlap_n,aa_n,pa,TCFC
+    return len(common_n),overlap_n,aa_n,pa
+    # return len(common_n),overlap_n,aa_n,pa,TCFC
     
 def place_feature(p_graph,n1,n2):
     n1_place = p_graph.neighbors(n1)
