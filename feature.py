@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import datetime as dt
+from time import time
 
 def geo_dist(l1,l2):
     return math.sqrt((l2[1]-l1[1])**2 + (l2[0]-l1[0])**2)
@@ -121,7 +122,7 @@ def place_feature(p_graph,n1,n2):
     return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist
 
 
-def temporal_place_feature(p_graph, n1, n2):
+def temporal_place_feature(p_graph, n1, n2, popular_places):
     # 1. TCS: temporal cosine sim
     # 2. SCR: spatial co-location rate = overlap_p
     # 3. STCR: Spatial top co-location rate
@@ -131,18 +132,18 @@ def temporal_place_feature(p_graph, n1, n2):
     # 7. StCS: Spatio-temporal cosine sim
 
     # get the top N popular place
-    popular_places = list()
-    fre_places = dict()
+    # popular_places = list()
+    # fre_places = dict()
     N = 10
     T = 24
-    for node in p_graph.nodes():
-        if p_graph.node[node]['type']=='place':
-            for neighbor in p_graph.neighbors(node):
-                num = len(p_graph[node][neighbor]['checkin_time_list'])
-                fre_places[place] = fre_places.get(place, 0)+num
-    # sort frequency of places
-    s_fre_places= sorted(fre_places.items(), key=lambda d:d[1], reverse = True)
-    popular_places = [i[0] for i in s_fre_places[0:10]]
+    # for node in p_graph.nodes():
+    #     if p_graph.node[node]['type']=='place':
+    #         for neighbor in p_graph.neighbors(node):
+    #             num = len(p_graph.edge[node][neighbor]['checkin_time_list'])
+    #             fre_places[node] = fre_places.get(node, 0)+num
+    # # sort frequency of places
+    # s_fre_places= sorted(fre_places.items(), key=lambda d:d[1], reverse = True)
+    # popular_places = [i[0] for i in s_fre_places[0:10]]
 
     # build n1, n2 time-place matrix in 24 hours
     n1_tp_matrix = list()
@@ -158,16 +159,17 @@ def temporal_place_feature(p_graph, n1, n2):
         n1_tp_pop_matrix.append(dict())
         n2_tp_pop_matrix.append(dict())
     # build the time-spatial matrix
+    s = time()
     for place in n1_places:
-        c_list = p_graph.edge[n1][place]['chechin_time_list']
-        for time in c_list:
-            checkin_time = dt.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
-            n1_tp_matrix[chechin_time.hour][place] = n1_tp_matrix[chechin_time.hour].get(place, 0)+1
+        c_list = p_graph.edge[n1][place]['checkin_time_list']
+        for date in c_list:
+            checkin_time = dt.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S")
+            n1_tp_matrix[checkin_time.hour][place] = n1_tp_matrix[checkin_time.hour].get(place, 0)+1
     for place in n2_places:
-        c_list = p_graph.edge[n2][place]['chechin_time_list']
-        for time in c_list:
-            checkin_time = dt.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
-            n2_tp_matrix[chechin_time.hour][place] = n2_tp_matrix[chechin_time.hour].get(place, 0)+1
+        c_list = p_graph.edge[n2][place]['checkin_time_list']
+        for date in c_list:
+            checkin_time = dt.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S")
+            n2_tp_matrix[checkin_time.hour][place] = n2_tp_matrix[checkin_time.hour].get(place, 0)+1
     # build popular time-spatial matrix
     for hour in range(0,24):
         for place in n1_tp_matrix[hour].keys():
@@ -175,7 +177,9 @@ def temporal_place_feature(p_graph, n1, n2):
                 n1_tp_pop_matrix[hour][place] = n1_tp_matrix[hour][place]
         for place in n2_tp_matrix[hour].keys():
             if place in popular_places:
-                n1_tp_pop_matrix[hour][place] = n1_tp_matrix[hour][place]
+                n2_tp_pop_matrix[hour][place] = n2_tp_matrix[hour][place]
+    e = time()
+    print('time of build time-spatial matrix', e-s)
 
     # 1. TCS
     TCS = float()
@@ -209,16 +213,18 @@ def temporal_place_feature(p_graph, n1, n2):
     if n == 0:
         STCR = 0
     else:
-        STCR = len(set(l1.keys()).union(set(l2)))/n
+        STCR = len(set(l1.keys()).union(set(l2.keys())))/n
 
     # 5. StCR: Spatio-temporal co-location rate
     StCR = float()
     for hour in range(0,24):
         n1_places = n1_tp_matrix[hour].keys()
         n2_places = n2_tp_matrix[hour].keys()
-        common_p = set(n1_places.intersection(set(n2_places)))
+        common_p = set(n1_places).intersection(set(n2_places))
+        denominator = len(n1_places)+len(n2_places)-len(common_p)
         # union_p = set(n1_places.union(set(n2_places)))
-        StCR = StCR+float(len(common_p))/(len(n1_places)+len(n2_places)-len(common_p))
+        if denominator !=0:
+            StCR = StCR+float(len(common_p))/denominator
     StCR = StCR/T
 
     # 6. StTCR: Spatio-temporal top co-location rate
@@ -226,9 +232,10 @@ def temporal_place_feature(p_graph, n1, n2):
     for hour in range(0,24):
         n1_places = n1_tp_pop_matrix[hour].keys()
         n2_places = n2_tp_pop_matrix[hour].keys()
-        common_p = set(n1_places.intersection(set(n2_places)))
+        common_p = set(n1_places).intersection(set(n2_places))
         n = min(len(l1), len(l2))
-        StTCR = StTCR+float(common_p)/n
+        if n != 0:
+            StTCR = StTCR+float(len(common_p))/n
     StTCR = StTCR/T
 
     # 7. StCS: Spatio-temporal cosine sim
@@ -238,14 +245,15 @@ def temporal_place_feature(p_graph, n1, n2):
         n2_place_fre = n2_tp_matrix[hour]
         n1_places = n1_place_fre.keys()
         n2_places = n2_place_fre.keys()
-        n1_fres = n1_place_fre.values()
-        n2_fres = n2_place_fre.values()
+        n1_fres = list(n1_place_fre.values())
+        n2_fres = list(n2_place_fre.values())
         numerator = float()
         for place in n1_places:
             if place in n2_places:
                 numerator = numerator+n1_place_fre[place]*n2_place_fre[place]
         denominator = (np.dot(n1_fres, n1_fres)*np.dot(n2_fres, n2_fres))**0.5
-        StCS = StCS + numerator/denominator
+        if denominator!=0:
+            StCS = StCS + numerator/denominator
     StCS = StCS/T
 
     return TCS, STCR, StCR, StTCR, StCS

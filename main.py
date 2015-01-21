@@ -15,7 +15,7 @@ def writeFeature(f, label, feature_list):
                 print(feature[i], file=f)
             else:
                 print(feature[i], end=',', file=f)
-def computeFeature(social_graph, checkin_graph, edges_list, nprocs):
+def computeFeature(social_graph, checkin_graph, edges_list, nprocs, popular_places):
     """using multiprocessing to speed up feature computation"""
     s = time()
     num_edge = len(edges_list)
@@ -27,7 +27,7 @@ def computeFeature(social_graph, checkin_graph, edges_list, nprocs):
             edges = edges_list[i*chunk_size:]
         else:
             edges = edges_list[i*chunk_size:(i+1)*chunk_size]
-        p = mp.Process(target=worker, args=(social_graph, checkin_graph, edges, out_q))
+        p = mp.Process(target=worker, args=(social_graph, checkin_graph, edges, out_q, popular_places))
         procs.append(p)
         p.start()
     feature_list = list()
@@ -39,14 +39,14 @@ def computeFeature(social_graph, checkin_graph, edges_list, nprocs):
     print("time of feature:", e-s)
     return feature_list
 
-def worker(social_graph, checkin_graph, edges, out_q):
+def worker(social_graph, checkin_graph, edges, out_q, popular_places):
     out_list = list()
     for edge in edges:
         n1 = edge[0]
         n2 = edge[1]
         result  = ft.social_feature(social_graph, n1, n2)
         result += ft.place_feature(checkin_graph, n1, n2)
-        result += ft.temporal_place_feature(checkin_graph, n1, n2)
+        result += ft.temporal_place_feature(checkin_graph, n1, n2, popular_places)
         if len(edge) == 3:
             answer = edge[2]
             out_list.append((answer,n1,n2)+result)
@@ -64,16 +64,18 @@ if __name__ == '__main__':
 # initialize 
         social_graph, not_friend_list = cf.create_social_graph(input_path)
         checkin_graph = cf.create_checkin_info(input_path, social_graph)
+        popular_places = cf.get_popular_places(checkin_graph, 10)
         train_feature_file = open(output_path+'train_feature.csv', 'w')
         print('label,n1,n2,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist',file=train_feature_file)
-        label_1_feature = computeFeature(social_graph, checkin_graph, social_graph.edges(), nprocs)
-        label_0_feature = computeFeature(social_graph, checkin_graph, not_friend_list, nprocs)
+        label_1_feature = computeFeature(social_graph, checkin_graph, social_graph.edges(), nprocs, popular_places)
+        label_0_feature = computeFeature(social_graph, checkin_graph, not_friend_list, nprocs, popular_places)
         writeFeature(train_feature_file, 1, label_1_feature)
         writeFeature(train_feature_file, 0, label_0_feature)
     elif command == 'test': # compute test features
 # initialize 
         social_graph, not_friend_list = cf.create_social_graph(input_path)
         checkin_graph = cf.create_checkin_info(input_path, social_graph)
+        popular_places = cf.get_popular_places(checkin_graph, 10)
         test = open(input_path+'gowalla.test.txt', 'r')
         edges_list = list()
         for line in test:
@@ -81,7 +83,7 @@ if __name__ == '__main__':
             edges_list.append((int(entry[0]), int(entry[1]), entry[2]))
         test_feature_file = open(output_path+'test_feature.csv', 'w')
         print('label,answer,n1,n2,common_n,overlap_n,aa_n,pa,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist',file=test_feature_file)
-        test_feature = computeFeature(social_graph, checkin_graph, edges_list, nprocs)
+        test_feature = computeFeature(social_graph, checkin_graph, edges_list, nprocs, popular_places)
         writeFeature(test_feature_file, 0, test_feature)
     elif command == 'map_verify':
         # just to verify the correctness of a function  
