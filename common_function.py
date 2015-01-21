@@ -98,6 +98,22 @@ def create_checkin_info(file_path,s_graph):
 #    print(checkin_info.node['p6616040'])
 
     return checkin_info
+    
+def get_popular_places(p_graph, pop_num):
+    popular_places = list()
+    fre_places = dict()
+    N = pop_num
+    for node in p_graph.nodes():
+        if p_graph.node[node]['type']=='place':
+            for neighbor in p_graph.neighbors(node):
+                num = len(p_graph.edge[node][neighbor]['checkin_time_list'])
+                fre_places[node] = fre_places.get(node, 0)+num
+    # sort frequency of places
+    s_fre_places= sorted(fre_places.items(), key=lambda d:d[1], reverse = True)
+    popular_places = [i[0] for i in s_fre_places[0:10]]
+
+    return popular_places
+
 def update_user_hometown(checkin_info,s_graph,ht):
     """add a user's hometown to a node's attribute in checkin_info"""
     for u in checkin_info.nodes():
