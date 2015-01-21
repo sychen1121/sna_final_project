@@ -1,6 +1,6 @@
 import common_function as cf
 import poi_graph as poi
-import poi_recommend as poi_r
+#import poi_recommend as poi_r
 import feature as ft
 import multiprocessing as mp
 import math
