@@ -325,33 +325,33 @@ def place_feature_time_constrain(p_graph, n1, n2):
         tmp_time_list+= p_graph.edge[n1][p]['checkin_time_list']
     for p in place_n2:
         tmp_time_list += p_graph.edge[n2][p]['checkin_time_list']
-    current_timestamp = dt.datetime.strptime(max(tmp_time_list)[0:10], "%Y-%m-%d")
-
+    current_timestamp = dt.datetime.strptime(max(tmp_time_list)[0:10], "%Y-%m-%d")+dt.timedelta(1)
     phi_co  = 0
     phi_dco = 0
     phi_dlo = 0
     for p in place_n1 & place_n2:
-       t1_list = p_graph.edge[n1][p]['checkin_time_list']
-       t2_list = p_graph.edge[n2][p]['checkin_time_list']
-       dco_f1 = False
-       dco_f2 = False
-       dlo_f1 = False
-       dlo_f2 = False
-       for t1 in t1_list:
-           t1 = dt.datetime.strptime(t1, "%Y-%m-$dT%H:%M:%S")
-           if t1 - current_timestamp <= dt.timedelta(60):
-               dco_f1 = True
-               dlo_f1 = True
-               for t2 in t2_list:
-                   t2 = dt.datetime.strptime(t2, "%Y-%m-$dT%H:%M:%S")
-                   if t2 - current_timestamp <= dt.timedelta(90):
-                       dlo_f2 = True
-                       if t1-t2 <= dt.timedelta(0, 900):
-                           phi_co += 1
-                           dco_f2 = True
-                           break
+        t1_list = p_graph.edge[n1][p]['checkin_time_list']
+        t2_list = p_graph.edge[n2][p]['checkin_time_list']
+        dco_f1 = False
+        dco_f2 = False
+        dlo_f1 = False
+        dlo_f2 = False
+        for t1 in t1_list:
+            t1 = dt.datetime.strptime(t1, "%Y-%m-%dT%H:%M:%S")
+            if current_timestamp - t1 <= dt.timedelta(60):
+                dco_f1 = True
+                dlo_f1 = True
+                for t2 in t2_list:
+                    t2 = dt.datetime.strptime(t2, "%Y-%m-%dT%H:%M:%S")
+                    #print(t2.strftime("%Y-%m-%dT%H:%M:%S"), current_timestamp-t2)
+                    if current_timestamp - t2 <= dt.timedelta(60):
+                        dlo_f2 = True
+                        if abs(t1-t2) <= dt.timedelta(0, 900):
+                            phi_co += 1
+                            dco_f2 = True
+                            break
         if dco_f1 and dco_f2:
             phi_dco += 1
         if dlo_f1 and dlo_f2:
-            phi_dlo += 1
+            phi_dlo += 1 
     return phi_co, phi_dco, phi_dlo
