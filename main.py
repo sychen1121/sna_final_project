@@ -82,7 +82,7 @@ if __name__ == '__main__':
             entry = line.strip().split()
             edges_list.append((int(entry[0]), int(entry[1]), entry[2]))
         test_feature_file = open(output_path+'test_feature.csv', 'w')
-        print('label,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS',file=test_feature_file)
+        print('label,answer,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,common_p,overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS',file=test_feature_file)
         test_feature = computeFeature(social_graph, checkin_graph, edges_list, nprocs, popular_places)
         writeFeature(test_feature_file, 0, test_feature)
     elif command == 'map_verify':

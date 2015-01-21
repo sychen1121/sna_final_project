@@ -16,9 +16,9 @@ def social_feature(s_graph,n1,n2):
 #     alpha_n = set(n1_neightbor).union(n2_neightbor)
 
 #shortest path & sum
-    sh_path = nx.shortest_path_length(s_graph, n1, n2)
-    print("shortest path done:"+str(sh_path))
-    sh_path = 1/sh_path
+#     sh_path = nx.shortest_path_length(s_graph, n1, n2)
+#     print("shortest path done:"+str(sh_path))
+#     sh_path = 1/sh_path
     
 #     paths = nx.all_simple_paths(s_graph, n1, n2)
 #     sum_paths = 0
@@ -97,7 +97,7 @@ def place_feature(p_graph,n1,n2):
     for cc in common_cat:
         cccp += cat2[cc]*cat1[cc]
     
-    cccpr = (cccp+1)/(float(phi1*phi2)**(1/2)+1)
+    cccpr = cccp/(float(phi1*phi2)**(1/2)+1)
 
 #cccp  
     
@@ -213,7 +213,7 @@ def temporal_place_feature(p_graph, n1, n2, popular_places):
         n1_tp_pop_matrix.append(dict())
         n2_tp_pop_matrix.append(dict())
     # build the time-spatial matrix
-    s = time()
+#     s = time()
     for place in n1_places:
         c_list = p_graph.edge[n1][place]['checkin_time_list']
         for date in c_list:
@@ -232,8 +232,8 @@ def temporal_place_feature(p_graph, n1, n2, popular_places):
         for place in n2_tp_matrix[hour].keys():
             if place in popular_places:
                 n2_tp_pop_matrix[hour][place] = n2_tp_matrix[hour][place]
-    e = time()
-    print('time of build time-spatial matrix', e-s)
+#     e = time()
+#     print('time of build time-spatial matrix', e-s)
 
     # 1. TCS
     TCS = float()
