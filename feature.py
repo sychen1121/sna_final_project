@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import datetime as dt
+import networkx as nx
 
 def geo_dist(l1,l2):
     return math.sqrt((l2[1]-l1[1])**2 + (l2[0]-l1[0])**2)
@@ -11,7 +12,21 @@ def social_feature(s_graph,n1,n2):
     n2_neightbor = s_graph.neighbors(n2)
     common_n = set(n1_neightbor).intersection(n2_neightbor)
 #     alpha_n = set(n1_neightbor).union(n2_neightbor)
+
+#shortest path & sum
+    sh_path = nx.shortest_path_length(s_graph, n1, n2)
+    print("shortest path done:"+str(sh_path))
+    sh_path = 1/sh_path
     
+#     paths = nx.all_simple_paths(s_graph, n1, n2)
+#     sum_paths = 0
+#     
+#     
+#     for path in paths:
+#         sum_paths = sum_paths + 1/len(path)
+#     
+#     print("all path done")
+# TCFC
     TCFC = 0
     for cf in common_n:
         cf_neightbor = s_graph.neighbors(cf)
