@@ -1,5 +1,6 @@
 import common_function as cf
 import poi_graph as poi
+import statistics as st
 #import poi_recommend as poi_r
 import feature as ft
 import multiprocessing as mp
@@ -137,5 +138,11 @@ if __name__ == '__main__':
         poi_r.write_user_cosine_spots(output_path, poi_graph, user_list, 10, 8)
         e=time()
         print('time of user_cosine', e-s)
-
+    elif command == 'link_stat_report':
+        social_graph, not_friend_list = cf.create_social_graph(input_path)
+        checkin_graph = cf.create_checkin_info(input_path, social_graph)
+        st.statistics(checkin_graph, output_path)
+    elif command == 'poi_stat_report':
+        poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
+        st.statistics(poi_graph, output_path)
     print("end of execution")

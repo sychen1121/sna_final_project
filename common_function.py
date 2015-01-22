@@ -44,7 +44,7 @@ def create_checkin_info(file_path,s_graph):
             place = (int(checkin.split(':')[3]))
             date_string = checkin.split('Z')[0]
 #            checkin_time = dt.datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
-            checkin_time = date_string
+            checkin_time = date_string+'Z'
             placeID='p'+str(place)
             if checkin_info.has_edge(user, placeID):
                 num = checkin_info.edge[user][placeID]['num_checkin']
@@ -92,10 +92,6 @@ def create_checkin_info(file_path,s_graph):
     update_user_hometown(checkin_info,s_graph,ht)
     e = time()
     print("time of update_user_hometown",e-s)
-#    print('2999', checkin_info.node[checkin_info.node[2999]['hometown']]['lat'])
-#    print('1303883',checkin_info.node[checkin_info.node[1303883]['hometown']]['lat'])
-#    print(checkin_info.node['p378468'])
-#    print(checkin_info.node['p6616040'])
 
     return checkin_info
     
