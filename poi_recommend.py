@@ -47,6 +47,38 @@ def evaluate(method, prediction_path='../output/poi_recommendation/',testing_pat
     with open('../output/poi_recommendation/result.txt', 'a') as fo:
         fo.write(method+'\t'+str(accuracy)+'\t'+str(dt.datetime.now())+'\n')
 
+# output accuracy to result.txt
+def evaluate_no_visited(method, prediction_path='../output/poi_recommendation/',testing_path='../input/Gowalla_new/POI/'):
+    # input: testing file's path, result file's path and method name
+    # output: output the accuracy in result.txt
+    answers = dict()
+    predictions = dict()
+    with open(testing_path+'Gowalla_testing.txt','r') as fi:
+        for line in fi:
+            entry = line.strip().split('\t')
+            user = entry[0]
+            place = 'p'+entry[4]
+            if answers.get(user, 0) == 0:
+                answers[user] = list()
+            answers[user].append(place)
+    with open(prediction_path+'result_'+method+'.txt', 'r') as fi2:
+        for line in fi2:
+            entry = line.strip().split()
+            user = entry[0]
+            places = entry[1:-1]
+            predictions[user] = places
+    user_num = len(answers)
+    bingo = 0 
+    for user in predictions.keys():
+        answer_places = answers[user]
+        for place in predictions[user]:
+            if place in answer_places:
+                bingo = bingo+1
+                answer_places.remove(place)
+    accuracy = float(bingo)/(3*len(answers))
+    with open('../output/poi_recommendation/result.txt', 'a') as fo:
+        fo.write(method+'\t'+str(accuracy)+'\t'+str(dt.datetime.now())+'\n')
+
 
 # write prediction dictionary to the file under output/poi_recommendation
 def write_prediction(method, predict_dict):

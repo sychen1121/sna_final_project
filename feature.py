@@ -55,14 +55,14 @@ def social_feature(s_graph,n1,n2):
     
     pa = len(n1_neightbor)*len(n2_neightbor)
     
-    spath = int()
-    if len(common_n)!=0:
-        spath=1
-    else:
-        try:
-            spath = 1/float(nx.shortest_path(s_graph, source=n1, target=n2))
-        except:
-            spath=0
+    spath = float()
+    # if len(common_n)!=0:
+    #     spath=1
+    # else:
+    try:
+        spath = 1/float(nx.shortest_path_length(s_graph, source=n1, target=n2))
+    except:
+        spath=0
 #     return len(common_n),overlap_n,aa_n,pa
     return len(common_n),overlap_n,aa_n,pa,TCFC,spath
     
