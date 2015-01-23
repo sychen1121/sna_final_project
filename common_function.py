@@ -44,7 +44,7 @@ def create_checkin_info(file_path,s_graph):
             place = (int(checkin.split(':')[3]))
             date_string = checkin.split('Z')[0]
 #            checkin_time = dt.datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
-            checkin_time = date_string+'Z'
+            checkin_time = date_string
             placeID='p'+str(place)
             if checkin_info.has_edge(user, placeID):
                 num = checkin_info.edge[user][placeID]['num_checkin']
