@@ -44,7 +44,7 @@ def create_checkin_info(file_path,s_graph):
             place = (int(checkin.split(':')[3]))
             date_string = checkin.split('Z')[0]
 #            checkin_time = dt.datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
-            checkin_time = date_string+'Z'
+            checkin_time = date_string
             placeID='p'+str(place)
             if checkin_info.has_edge(user, placeID):
                 num = checkin_info.edge[user][placeID]['num_checkin']
@@ -81,6 +81,11 @@ def create_checkin_info(file_path,s_graph):
     update_place_entropy(checkin_info)
     e = time()
     print("time of entropy", e-s)
+
+    s = time()
+    update_user_entropy(checkin_info)
+    e = time()
+    print("time of user entropy", e-s)
 
     s = time()
     fr_ht = open("output/link_prediction/HT_geo_info.txt", mode='r')
@@ -157,6 +162,27 @@ def update_place_info(file_path, checkin_info):
         else:
             checkin_info.add_node(placeID, type='place', category=cat, total_checkin_spot=total, \
                     lat=latitude, lng=longtitude, total_checkin=total)
+
+def update_user_entropy(checkin_info):
+    for n in checkin_info.nodes():
+        if checkin_info.node[n]['type'] == 'user':
+            e = compute_user_entropy(checkin_info, n)
+            checkin_info.add_node(n, entropy=e)
+
+def compute_user_entropy(checkin_info, user):
+    from math import log
+    places = checkin_info.neighbors(user)
+    total_checkin = float()
+    for place in places:
+        total_checkin = total_checkin+checkin_info.edge[user][place]['num_checkin']
+    entropy = 0.0
+    for place in places:
+        num_checkin = checkin_info.edge[user][place]['num_checkin']
+        fraction = num_checkin/float(total_checkin)
+        entropy = entropy+fraction*log(fraction)
+    if entropy!=0:
+        entropy *= -1
+    return entropy
 
 def update_place_entropy(checkin_info):
     """compute the entropy of places in the place graph"""
