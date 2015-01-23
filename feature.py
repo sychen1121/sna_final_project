@@ -1,7 +1,9 @@
 import math
 import numpy as np
 import datetime as dt
+import networkx as nx
 from time import time
+
 
 def geo_dist(l1,l2):
     return math.sqrt((l2[1]-l1[1])**2 + (l2[0]-l1[0])**2)
@@ -12,7 +14,21 @@ def social_feature(s_graph,n1,n2):
     n2_neightbor = s_graph.neighbors(n2)
     common_n = set(n1_neightbor).intersection(n2_neightbor)
 #     alpha_n = set(n1_neightbor).union(n2_neightbor)
+
+#shortest path & sum
+#     sh_path = nx.shortest_path_length(s_graph, n1, n2)
+#     print("shortest path done:"+str(sh_path))
+#     sh_path = 1/sh_path
     
+#     paths = nx.all_simple_paths(s_graph, n1, n2)
+#     sum_paths = 0
+#     
+#     
+#     for path in paths:
+#         sum_paths = sum_paths + 1/len(path)
+#     
+#     print("all path done")
+# TCFC
     TCFC = 0
     for cf in common_n:
         cf_neightbor = s_graph.neighbors(cf)
@@ -82,7 +98,7 @@ def place_feature(p_graph,n1,n2):
     for cc in common_cat:
         cccp += cat2[cc]*cat1[cc]
     
-    cccpr = (cccp+1)/(float(phi1*phi2)**(1/2)+1)
+    cccpr = cccp/(float(phi1*phi2)**(1/2)+1)
 
 #cccp  
     
@@ -205,7 +221,7 @@ def temporal_place_feature(p_graph, n1, n2, popular_places):
         n1_tp_pop_matrix.append(dict())
         n2_tp_pop_matrix.append(dict())
     # build the time-spatial matrix
-    # s = time()
+#     s = time()
     for place in n1_places:
         c_list = p_graph.edge[n1][place]['checkin_time_list']
         for date in c_list:
@@ -224,8 +240,8 @@ def temporal_place_feature(p_graph, n1, n2, popular_places):
         for place in n2_tp_matrix[hour].keys():
             if place in popular_places:
                 n2_tp_pop_matrix[hour][place] = n2_tp_matrix[hour][place]
-    # e = time()
-    # print('time of build time-spatial matrix', e-s)
+#     e = time()
+#     print('time of build time-spatial matrix', e-s)
 
     # 1. TCS
     TCS = float()
@@ -303,4 +319,47 @@ def temporal_place_feature(p_graph, n1, n2, popular_places):
     StCS = StCS/T
 
     return TCS, STCR, StCR, StTCR, StCS
-        
+
+def place_feature_time_constrain(p_graph, n1, n2):
+    """ the function compute the following features past 2 months, 4 months, 6 months,
+        phi_co:  times that n1 and n2 check-in at the same place within the span of 15 mins
+        phi_dco: # of distinct places where n1 an n2 check-in within 15 mins
+        phi_dlo: # of distinct common place where n1 and n2 checkin
+    """
+    place_n1 = set(p_graph.neighbors(n1))
+    place_n2 = set(p_graph.neighbors(n2))
+    tmp_time_list = list()
+    for p in place_n1:
+        tmp_time_list+= p_graph.edge[n1][p]['checkin_time_list']
+    for p in place_n2:
+        tmp_time_list += p_graph.edge[n2][p]['checkin_time_list']
+    current_timestamp = dt.datetime.strptime(max(tmp_time_list)[0:10], "%Y-%m-%d")+dt.timedelta(1)
+    phi_co  = 0
+    phi_dco = 0
+    phi_dlo = 0
+    for p in place_n1 & place_n2:
+        t1_list = p_graph.edge[n1][p]['checkin_time_list']
+        t2_list = p_graph.edge[n2][p]['checkin_time_list']
+        dco_f1 = False
+        dco_f2 = False
+        dlo_f1 = False
+        dlo_f2 = False
+        for t1 in t1_list:
+            t1 = dt.datetime.strptime(t1, "%Y-%m-%dT%H:%M:%S")
+            if current_timestamp - t1 <= dt.timedelta(60):
+                dco_f1 = True
+                dlo_f1 = True
+                for t2 in t2_list:
+                    t2 = dt.datetime.strptime(t2, "%Y-%m-%dT%H:%M:%S")
+                    #print(t2.strftime("%Y-%m-%dT%H:%M:%S"), current_timestamp-t2)
+                    if current_timestamp - t2 <= dt.timedelta(60):
+                        dlo_f2 = True
+                        if abs(t1-t2) <= dt.timedelta(0, 900):
+                            phi_co += 1
+                            dco_f2 = True
+                            break
+        if dco_f1 and dco_f2:
+            phi_dco += 1
+        if dlo_f1 and dlo_f2:
+            phi_dlo += 1 
+    return phi_co, phi_dco, phi_dlo

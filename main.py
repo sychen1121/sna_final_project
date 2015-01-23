@@ -1,5 +1,6 @@
 import common_function as cf
 import poi_graph as poi
+import statistics as st
 #import poi_recommend as poi_r
 import feature as ft
 import multiprocessing as mp
@@ -55,6 +56,7 @@ def worker(social_graph, checkin_graph, edges, out_q, popular_places):
         result  = ft.social_feature(social_graph, n1, n2)
         result += ft.place_feature(checkin_graph, n1, n2)
         result += ft.temporal_place_feature(checkin_graph, n1, n2, popular_places)
+        result += ft.place_feature_time_constrain(checkin_graph, n1, n2)
         if len(edge) == 3:
             answer = edge[2]
             out_list.append((answer,n1,n2)+result)
@@ -74,7 +76,7 @@ if __name__ == '__main__':
         checkin_graph = cf.create_checkin_info(input_path, social_graph)
         popular_places = cf.get_popular_places(checkin_graph, 10)
         train_feature_file = open(output_path+'train_feature.csv', 'w')
-        print('label,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,common_p,overlap_p,w_common_p,w_overlap_p,user_ent,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS',file=train_feature_file)
+        print('label,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,common_p,overlap_p,w_common_p,w_overlap_p,user_ent,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS,phi_co,phi_dco,phi_dlo',file=train_feature_file)
         label_1_feature = computeFeature(social_graph, checkin_graph, social_graph.edges(), nprocs, popular_places)
         label_0_feature = computeFeature(social_graph, checkin_graph, not_friend_list, nprocs, popular_places)
         writeFeature(train_feature_file, 1, label_1_feature)
@@ -90,7 +92,7 @@ if __name__ == '__main__':
             entry = line.strip().split()
             edges_list.append((int(entry[0]), int(entry[1]), entry[2]))
         test_feature_file = open(output_path+'test_feature.csv', 'w')
-        print('label,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,common_p,overlap_p,w_common_p,w_overlap_p,user_ent,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS',file=test_feature_file)
+        print('label,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,common_p,overlap_p,w_common_p,w_overlap_p,user_ent,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS,phi_co,phi_dco,phi_dlo',file=test_feature_file)
         test_feature = computeFeature(social_graph, checkin_graph, edges_list, nprocs, popular_places)
         writeFeature(test_feature_file, -1, test_feature)
     elif command == 'map_verify':
@@ -144,7 +146,6 @@ if __name__ == '__main__':
         poi_r.write_user_cosine_spots(output_path, poi_graph, user_list, 10, 8)
         e=time()
         print('time of user_cosine', e-s)
-    elif command == 'lk_social_stat':
         # link prediction
         social_graph, not_friend_list = cf.create_social_graph(input_path)
         cs.get_social_graph_stat(social_graph, output_path)
@@ -153,7 +154,11 @@ if __name__ == '__main__':
         output_path='output/poi_recommendation/'
         social_graph = poi.create_social_graph(input_path)
         cs.get_social_graph_stat(social_graph, output_path)
-
-
-
+    elif command == 'link_stat_report':
+        social_graph, not_friend_list = cf.create_social_graph(input_path)
+        checkin_graph = cf.create_checkin_info(input_path, social_graph)
+        st.statistics(checkin_graph, output_path)
+    elif command == 'poi_stat_report':
+        poi_graph, user_list, place_list = poi.create_poi_graph_from_file(input_path)
+        st.statistics(poi_graph, output_path)
     print("end of execution")
