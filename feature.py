@@ -59,10 +59,20 @@ def social_feature(s_graph,n1,n2):
     # if len(common_n)!=0:
     #     spath=1
     # else:
+    has_e = bool()
+    data = dict()
+    if s_graph.has_edge(n1,n2):
+        has_e = True
+        data = s_graph.get_edge_data(n1,n2)
+        s_graph.remove_edge(n1,n2)
     try:
         spath = 1/float(nx.shortest_path_length(s_graph, source=n1, target=n2))
     except:
         spath=0
+    if has_e:
+        s_graph.add_edge(n1,n2)
+        for attr in data.keys():
+            s_graph.edge[n1][n2][attr] = data[attr]
 #     return len(common_n),overlap_n,aa_n,pa
     return len(common_n),overlap_n,aa_n,pa,TCFC,spath
     
