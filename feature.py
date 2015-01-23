@@ -39,6 +39,7 @@ def social_feature(s_graph,n1,n2):
     
     pa = len(n1_neightbor)*len(n2_neightbor)
     
+
 #     return len(common_n),overlap_n,aa_n,pa
     return len(common_n),overlap_n,aa_n,pa,TCFC
     
@@ -93,6 +94,7 @@ def place_feature(p_graph,n1,n2):
     else:
         overlap_p= len(common_p)*1.0/((pNum1+pNum2)-len(common_p))
     
+    user_ent = 0.0
     aa_ent = 0
     min_ent = 5.0
     aa_p =0
@@ -116,6 +118,12 @@ def place_feature(p_graph,n1,n2):
         else:
             aa_p = aa_p + 1.0/p_graph.node[place]['total_checkin']
     
+    n1_e = p_graph.node[n1]['entropy']
+    n2_e = p_graph.node[n2]['entropy']
+    if n1_e==0 and n2_e ==0:
+        user_ent=0
+    else:
+        user_ent = abs(n1_e-n2_e)/max(n1_e, n2_e)
 # compute  w_common_p/w_overlap_p
     
     c1 = list()
@@ -157,7 +165,7 @@ def place_feature(p_graph,n1,n2):
         geodist = ""
         w_geodist = ""
 
-    return len(common_p),overlap_p,w_common_p,w_overlap_p,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr
+    return len(common_p),overlap_p,w_common_p,w_overlap_p,user_ent,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr
 
 
 def temporal_place_feature(p_graph, n1, n2, popular_places):
@@ -197,7 +205,7 @@ def temporal_place_feature(p_graph, n1, n2, popular_places):
         n1_tp_pop_matrix.append(dict())
         n2_tp_pop_matrix.append(dict())
     # build the time-spatial matrix
-    s = time()
+    # s = time()
     for place in n1_places:
         c_list = p_graph.edge[n1][place]['checkin_time_list']
         for date in c_list:
@@ -216,8 +224,8 @@ def temporal_place_feature(p_graph, n1, n2, popular_places):
         for place in n2_tp_matrix[hour].keys():
             if place in popular_places:
                 n2_tp_pop_matrix[hour][place] = n2_tp_matrix[hour][place]
-    e = time()
-    print('time of build time-spatial matrix', e-s)
+    # e = time()
+    # print('time of build time-spatial matrix', e-s)
 
     # 1. TCS
     TCS = float()
