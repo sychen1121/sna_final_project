@@ -56,7 +56,7 @@ def social_feature(s_graph,n1,n2):
     pa = len(n1_neightbor)*len(n2_neightbor)
     
     spath = int()
-    if common_n!=0:
+    if len(common_n)!=0:
         spath=1
     else:
         spath = nx.shortest_path(s_graph, source=n1, target=n2)
