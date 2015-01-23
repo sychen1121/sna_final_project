@@ -76,7 +76,7 @@ if __name__ == '__main__':
         checkin_graph = cf.create_checkin_info(input_path, social_graph)
         popular_places = cf.get_popular_places(checkin_graph, 10)
         train_feature_file = open(output_path+'train_feature.csv', 'w')
-        print('label,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,common_p,overlap_p,w_common_p,w_overlap_p,user_ent,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS,phi_co,phi_dco,phi_dlo',file=train_feature_file)
+        print('label,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,spath,common_p,overlap_p,w_common_p,w_overlap_p,user_ent,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS,phi_co,phi_dco,phi_dlo',file=train_feature_file)
         label_1_feature = computeFeature(social_graph, checkin_graph, social_graph.edges(), nprocs, popular_places)
         label_0_feature = computeFeature(social_graph, checkin_graph, not_friend_list, nprocs, popular_places)
         writeFeature(train_feature_file, 1, label_1_feature)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
             entry = line.strip().split()
             edges_list.append((int(entry[0]), int(entry[1]), entry[2]))
         test_feature_file = open(output_path+'test_feature.csv', 'w')
-        print('label,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,common_p,overlap_p,w_common_p,w_overlap_p,user_ent,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS,phi_co,phi_dco,phi_dlo',file=test_feature_file)
+        print('label,n1,n2,common_n,overlap_n,aa_n,pa,TCFC,spath,common_p,overlap_p,w_common_p,w_overlap_p,user_ent,aa_ent,min_ent,aa_p,min_p,pp,geodist,w_geodist,cccp,cccpr,TCS,STCR,StCR,StTCR,StCS,phi_co,phi_dco,phi_dlo',file=test_feature_file)
         test_feature = computeFeature(social_graph, checkin_graph, edges_list, nprocs, popular_places)
         writeFeature(test_feature_file, -1, test_feature)
     elif command == 'map_verify':
